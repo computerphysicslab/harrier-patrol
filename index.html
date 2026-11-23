@@ -1424,8 +1424,14 @@ class Game {
         }
         break;
       case STATES.SKILL_SELECT:
-        if (pressed.left) this.skillIndex = (this.skillIndex + SKILLS.length - 1) % SKILLS.length;
-        if (pressed.right) this.skillIndex = (this.skillIndex + 1) % SKILLS.length;
+        // The list is drawn vertically, so up/down are the natural keys;
+        // left/right stay as aliases for players used to the horizontal convention.
+        if (pressed.up || pressed.left) {
+          this.skillIndex = (this.skillIndex + SKILLS.length - 1) % SKILLS.length;
+        }
+        if (pressed.down || pressed.right) {
+          this.skillIndex = (this.skillIndex + 1) % SKILLS.length;
+        }
         if (pressed.back) {
           this.state = STATES.TITLE;
           this.emit('ui');
@@ -2934,7 +2940,7 @@ function drawOverlay(ctx, game) {
         centered(ctx, `${selected ? '>' : ' '} ${index + 1}  ${skill.name}`, y,
           8, selected ? PALETTE.foam : PALETTE.cyan);
       });
-      centered(ctx, 'LEFT / RIGHT  SELECT', 150, 7, PALETTE.yellow);
+      centered(ctx, 'UP / DOWN  SELECT', 150, 7, PALETTE.yellow);
       centered(ctx, 'ENTER START     Q BACK', 162, 7, PALETTE.yellow);
       break;
 

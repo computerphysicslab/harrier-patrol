@@ -4,8 +4,10 @@
 art is encoded as strings and audio is generated with Web Audio. There are no external images,
 fonts, stylesheets, scripts, service workers or runtime network requests.
 
-This is an independent, renamed publication of the frozen **HarrierAtack v0.9** engine. The
-product name is **Harrier Patrol**, which is not the name of the original 1983 game.
+This is an independent, renamed publication of the **HarrierAtack v0.9** engine plus one
+post-freeze fix: the skill list is vertical, so `W`/`S` (or `↑`/`↓`) move the selection and
+`A`/`D` and `←`/`→` remain aliases. The product name is **Harrier Patrol**, which is not the name
+of the original 1983 game.
 
 ## Play locally
 
@@ -15,6 +17,10 @@ and a deterministic `TEST FLIGHT`; the keyboard and gamepad controls are listed 
 
 The v0.9 deterministic test flight keeps all three lives, lasts 192.3 s (11540 ticks), scores
 3104 points and spends finite rockets and bombs through the same paths as a human player.
+
+On the skill screen, `W`/`S` or `↑`/`↓` change the selected difficulty, `Enter` starts the sortie
+and `Q` returns to the title. During the flight, arrows/WASD fly, `Space` fires the cannon,
+`J`/`X` launch rockets, `K`/`C` drop bombs, `P`/`Esc` pause and `T` runs the deterministic test.
 
 ## Publish on GitHub Pages
 
@@ -31,7 +37,7 @@ prevents any incidental static-site processing. Visitors only need a browser.
 
 ## Regenerate
 
-With the original v0.9 tree still at `../../`, run from this folder:
+With the HarrierAtack tree still at `../../`, run from this folder:
 
 ```bash
 python3 build.py
@@ -39,7 +45,7 @@ python3 build.py
 
 The script inlines `../../styles/main.css` and `../../game.bundle.js`, applies the Harrier
 Patrol branding, removes the optional service-worker registration and checks that no external
-references remain. It never modifies the frozen v0.9 sources.
+references remain. It never modifies the frozen release archives under `../../releases/`.
 
 ## Attribution
 
