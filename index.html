@@ -1,0 +1,3546 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Harrier Patrol: a self-contained VTOL arcade game inspired by the 1983 classic.">
+  <link rel="icon" href="data:,">
+  <title>Harrier Patrol — Single File Edition</title>
+  <style>
+:root {
+  color-scheme: dark;
+  --bg: #05090b;
+  --panel: #0c161a;
+  --cyan: #00b7d0;
+  --yellow: #d0be00;
+  --red: #ff1e00;
+  --white: #e8f4f4;
+  --border: #24414a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 50% -10%, #12323a 0, transparent 55%),
+    var(--bg);
+  color: var(--white);
+  font-family: "Courier New", ui-monospace, monospace;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  padding: 18px 12px 30px;
+}
+
+body.scanlines .screen-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.22) 3px,
+    rgba(0, 0, 0, 0.22) 4px
+  );
+}
+
+.page {
+  width: min(100%, 900px);
+}
+
+.masthead {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.masthead h1 {
+  margin: 0;
+  color: var(--yellow);
+  font-size: clamp(20px, 4vw, 34px);
+  letter-spacing: 0.12em;
+  text-shadow: 2px 2px 0 #4a3d00;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: var(--cyan);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cabinet {
+  background: linear-gradient(180deg, #101d22, #081114);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+}
+
+.screen-frame {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 8px;
+  background: #000;
+  border: 2px solid #36535c;
+  border-radius: 6px;
+  box-shadow: inset 0 0 26px rgba(0, 183, 208, 0.16);
+}
+
+#game {
+  display: block;
+  width: 768px;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #000;
+  outline: none;
+}
+
+#game:focus-visible {
+  box-shadow: 0 0 0 2px var(--yellow);
+}
+
+.status {
+  margin: 12px 0 8px;
+  text-align: center;
+  color: var(--cyan);
+  font-size: 12px;
+  min-height: 1.2em;
+}
+
+.toolbar,
+.touch-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+button {
+  font: inherit;
+  font-size: 12px;
+  color: var(--yellow);
+  background: #102026;
+  border: 1px solid #3a626c;
+  border-radius: 4px;
+  padding: 7px 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:hover,
+button:focus-visible {
+  color: #fff;
+  border-color: var(--cyan);
+  background: #16323a;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.touch-controls {
+  margin-top: 12px;
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 42px);
+  grid-template-rows: repeat(2, 42px);
+  gap: 4px;
+}
+
+.dpad button:nth-child(1) { grid-column: 2; grid-row: 1; }
+.dpad button:nth-child(2) { grid-column: 1; grid-row: 2; }
+.dpad button:nth-child(3) { grid-column: 2; grid-row: 2; }
+.dpad button:nth-child(4) { grid-column: 3; grid-row: 2; }
+
+.action-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  gap: 4px;
+}
+
+.legend {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  color: #b9d3d6;
+  font-size: 12px;
+}
+
+.legend h2 {
+  margin: 0 0 6px;
+  color: var(--yellow);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.legend ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 4px;
+  margin-right: 2px;
+  background: #17282e;
+  border: 1px solid #3a626c;
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+}
+
+.credits {
+  margin-top: 14px;
+  color: #7e9a9e;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.credits em { color: var(--cyan); }
+.credits code { color: var(--yellow); }
+
+@media (hover: hover) and (pointer: fine) {
+  .touch-controls { display: none; }
+}
+
+@media (max-width: 520px) {
+  body { padding: 10px 6px 24px; }
+  .cabinet { padding: 10px; }
+  .screen-frame { padding: 4px; }
+  .action-pad { grid-template-columns: repeat(3, 52px); }
+  button { padding: 6px 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.scanlines .screen-frame::after { display: none; }
+  button:active { transform: none; }
+}
+
+</style>
+</head>
+<body class="scanlines">
+  <div class="page">
+    <header class="masthead">
+      <h1>HARRIER PATROL</h1>
+      <p class="subtitle">VTOL strike sortie · static HTML homage · v0.9</p>
+    </header>
+
+    <main class="cabinet">
+      <div class="screen-frame">
+        <canvas id="game" width="256" height="192" tabindex="0"
+          aria-label="Harrier Patrol game screen. Use arrow keys to fly, Space to fire, J for rockets and K for bombs."></canvas>
+      </div>
+
+      <p id="status" class="status" aria-live="polite">TITLE · score 0 · lives 3 · fuel 100%</p>
+
+      <div class="toolbar" aria-label="Game options">
+        <button id="mute-toggle" type="button">SOUND ON</button>
+        <button id="scanline-toggle" type="button">CRT ON</button>
+        <button id="reset-scores" type="button">RESET SCORES</button>
+        <button id="test-toggle" type="button" aria-pressed="false">TEST FLIGHT</button>
+      </div>
+
+      <section class="touch-controls" aria-label="Touch controls">
+        <div class="dpad">
+          <button type="button" data-action="up" aria-label="Up">▲</button>
+          <button type="button" data-action="left" aria-label="Left">◀</button>
+          <button type="button" data-action="down" aria-label="Down">▼</button>
+          <button type="button" data-action="right" aria-label="Right">▶</button>
+        </div>
+        <div class="action-pad">
+          <button type="button" data-action="fire">FIRE</button>
+          <button type="button" data-action="rocket">RKT</button>
+          <button type="button" data-action="bomb">BOMB</button>
+          <button type="button" data-action="pause">PAUSE</button>
+          <button type="button" data-action="confirm">START</button>
+        </div>
+      </section>
+
+      <section class="legend" aria-label="Gamepad controls">
+        <p><strong>GAMEPAD:</strong> stick/D-pad move · A fire/start · X rocket · B bomb/back ·
+          LB/RB rocket/bomb · Start pause/confirm · Select mute. Initials: face buttons and
+          bumpers type letters, Start confirms, Select erases.</p>
+      </section>
+      <section class="legend" aria-label="Keyboard controls">
+        <h2>Controls</h2>
+        <ul>
+          <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd> — fly</li>
+          <li><kbd>Space</kbd> — cannon</li>
+          <li><kbd>J</kbd> / <kbd>X</kbd> — rocket</li>
+          <li><kbd>K</kbd> / <kbd>C</kbd> — bomb</li>
+          <li><kbd>P</kbd> / <kbd>Esc</kbd> — pause · <kbd>Q</kbd> — back / quit</li>
+          <li><kbd>Enter</kbd> — confirm · <kbd>M</kbd> — mute · <kbd>T</kbd> — auto test flight</li>
+          <li>Gamepad — stick/D-pad fly · A fire/confirm · X/RB rocket · B/LB bomb · Start pause</li>
+        </ul>
+        <p>Take off vertically, cross the sea, bomb the coast, return left to the carrier and descend gently onto the deck.</p>
+      </section>
+    </main>
+
+    <footer class="credits">
+      Inspired by <em>Harrier Attack!</em> (Durell Software, 1983) — original design by Ron Jeffs and
+      Robert White; Spectrum version by Mike A. Richardson. All code, art and audio here are original.
+      The screenshots in <code>screenshots/</code> are private reference material and are not shipped. Single-file edition of engine v0.9: finite-weapon aimed test flight and varied, stable scenery.
+    </footer>
+  </div>
+  <script>
+/* Generated by scripts/build-bundle.py. Edit src/*.js, then rebuild. */
+'use strict';
+
+// ---- src/config.js ----
+// Pure configuration for the browser homage. No DOM access here.
+
+const VIEW_W = 256;
+const VIEW_H = 192;
+const STEP = 1 / 60;
+
+const PALETTE = Object.freeze({
+  black: '#000000',
+  dark: '#000606',
+  cyan: '#00b7d0',
+  blue: '#0016ff',
+  yellow: '#d0be00',
+  red: '#ff1e00',
+  white: '#ffffff',
+  gray: '#3a4a4a',
+  green: '#00a84a',
+  skyTop: '#021634',
+  skyMid: '#0a5f9e',
+  seaDeep: '#000e52',
+  seaMid: '#0030a8',
+  seaLight: '#0a74c8',
+  foam: '#b9f4ff',
+  sand: '#c9a227',
+  sandDark: '#8a6712',
+  grass: '#0d6b32',
+  grassDark: '#074a24',
+  steel: '#8496a2',
+  steelDark: '#2b3c46',
+  hull: '#16242d',
+  orange: '#ff8c1a',
+  brown: '#6b4a1f'
+});
+
+// v0.4 stretches the original 1400 px route by 5 so a full out-and-back
+// sortie lasts about three minutes at the unchanged 72 px/s cruise speed.
+// Target density grows more slowly (3x) to keep the sortie demanding without
+// flooding the screen with entities.
+const WORLD = Object.freeze({
+  lengthScale: 5,
+  targetDensity: 3,
+  width: 7000,
+  seaEnd: 3450,
+  coastEnd: 6500,
+  shipPatrolMin: 800,
+  shipPatrolMax: 3277,
+  shipResetX: 3420,
+  carrierX: 0,
+  carrierW: 46,
+  deckY: 150,
+  seaFloor: 174,
+  landFloor: 156
+});
+
+const MISSION_TARGET_SECONDS = 180;
+
+// Translate an original-layout X coordinate into the stretched world.
+function worldX(baseX) {
+  return Math.round(baseX * WORLD.lengthScale);
+}
+
+const PLAYER = Object.freeze({
+  w: 15,
+  h: 9,
+  maxVx: 72,
+  maxVy: 58,
+  accel: 300,
+  drag: 0.90,
+  // Per-second burn falls with the longer route: a three-minute mission now
+  // costs about the same fuel as the old forty-second one.
+  fuelRate: 0.09,
+  climbFuel: 0.04,
+  cannonCooldown: 0.13,
+  rocketCooldown: 0.55,
+  bombCooldown: 0.40,
+  startBombs: 8,
+  startRockets: 6,
+  startLives: 3,
+  maxLives: 5
+});
+
+// v0.7: death no longer teleports the jet back to the carrier. A short frozen
+// pause shows the loss, then the same sortie resumes at the last alive spot
+// with a brief blinking invulnerability window.
+const RESPAWN = Object.freeze({
+  pauseSeconds: 1.0,
+  blinkSeconds: 1.6,
+  clearance: 18,
+  fuelRestore: 25
+});
+
+// v0.8: readable ammunition feedback and a visible 180-degree turn when the
+// mission switches to the return leg. All timings are in seconds.
+const FEEDBACK = Object.freeze({
+  lowAmmoCount: 3,
+  warningSeconds: 2.4,
+  dryFireSeconds: 1.2,
+  turnSeconds: 0.9
+});
+
+// Deterministic screen-selectable verification flight. The seed makes every
+// run reproducible; the controller only emits ordinary player actions, so the
+// autopilot can never mutate the simulation directly.
+const TEST_FLIGHT = Object.freeze({
+  seed: 0x48415252, // 'HARR'
+  cruiseY: 118,
+  returnY: 132,
+  deckY: 141,
+  targetTolerance: 3,
+  maxCorrectionVy: 34,
+  lookaheadSeconds: 0.75,
+  sampleSeconds: 0.1,
+  threatDistance: 26,
+  bodyDistance: 22,
+  // v0.9: the pilot now behaves like a player with finite rockets/bombs and a
+  // disciplined trigger. It only fires with a computed intercept and weaves
+  // left/right as well as climbing and diving.
+  targetRange: 210,
+  cannonRange: 155,
+  rocketReserve: 2,
+  cannonTolerance: 2,
+  rocketTolerance: 3,
+  bombRadius: 12,
+  bombAltitude: 108,
+  weaveSeconds: 2.4,
+  brakeThreatDistance: 44,
+  weaveFloor: 0.86,
+  weaveCeiling: 0.96
+});
+
+const SKILLS = Object.freeze([
+  { name: 'CADET',   multiplier: 1.0, spawn: 0.80, speed: 0.85, fuelUse: 0.85, flak: 0.7 },
+  { name: 'PILOT',   multiplier: 1.2, spawn: 1.00, speed: 1.00, fuelUse: 1.00, flak: 1.0 },
+  { name: 'ACE',     multiplier: 1.5, spawn: 1.18, speed: 1.12, fuelUse: 1.10, flak: 1.3 },
+  { name: 'VETERAN', multiplier: 2.0, spawn: 1.38, speed: 1.25, fuelUse: 1.22, flak: 1.6 },
+  { name: 'LEGEND',  multiplier: 2.5, spawn: 1.60, speed: 1.40, fuelUse: 1.35, flak: 2.0 }
+]);
+
+const TARGET_POINTS = Object.freeze({
+  ship: 100,
+  interceptor: 150,
+  missile: 50,
+  flakShell: 25,
+  radar: 250,
+  depot: 180,
+  flak: 140
+});
+
+const HIGH_SCORE_LIMIT = 8;
+const HIGH_SCORE_KEY = 'harrierattack.highscores.v1';
+const SETTINGS_KEY = 'harrierattack.settings.v1';
+
+// ---- src/terrain.js ----
+// Deterministic terrain data for the renderer. Pure functions; no DOM or Canvas APIs.
+// Gameplay collision floors stay in config.js - this module only describes visuals.
+
+const CELL = 24;
+const LAND_PATCHES = Object.freeze([
+  'tuft', 'rock', 'bush', 'palm', 'pine', 'oak', 'deadTree',
+  'hangar', 'crate', 'barrel', 'antenna'
+]);
+const BUILDING_TYPES = Object.freeze(['house', 'cottage', 'farmhouse', 'shop']);
+const VEHICLE_TYPES = Object.freeze(['truck', 'van', 'pickup']);
+
+function hashInt(value, seed = 0) {
+  let h = (value ^ seed) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+  h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+function hashUnit(value, seed = 0) {
+  return hashInt(value, seed) / 4294967295;
+}
+
+function smoothstep(t) {
+  return t * t * (3 - 2 * t);
+}
+
+function valueNoise(x, scale, seed = 0) {
+  const position = x / scale;
+  const cell = Math.floor(position);
+  const t = smoothstep(position - cell);
+  const a = hashUnit(cell, seed);
+  const b = hashUnit(cell + 1, seed);
+  return a + (b - a) * t;
+}
+
+// Visual ground line. It undulates by at most 2 px around the collision floor.
+function surfaceY(worldX) {
+  const offset = (valueNoise(worldX, 46, 11) - 0.5) * 4;
+  return WORLD.landFloor + Math.round(offset);
+}
+
+function duneHeight(worldX) {
+  return 5 + valueNoise(worldX, 74, 23) * 9;
+}
+
+function landFeatures(fromX, toX) {
+  const start = Math.ceil(Math.max(WORLD.seaEnd + CELL, Math.floor(fromX / CELL) * CELL) / CELL) * CELL;
+  const end = Math.min(WORLD.width - CELL, toX);
+  const result = [];
+  for (let cellX = start; cellX <= end; cellX += CELL) {
+    const r = hashUnit(cellX, 37);
+    if (r > 0.62) continue;
+    const pick = hashUnit(cellX, 71);
+    const type = LAND_PATCHES[Math.min(LAND_PATCHES.length - 1,
+      Math.floor(pick * LAND_PATCHES.length))];
+    const x = cellX + 3 + Math.floor(hashUnit(cellX, 91) * (CELL - 8));
+    result.push({ x, y: surfaceY(x), type, variant: hashUnit(cellX, 113) });
+  }
+  return result;
+}
+
+// Buildings sit on wider cells than the small decorations so a village never
+// overlaps itself. The cell origin is canonical; jitter only moves the sprite
+// inside that cell, so panning the camera cannot make a house flicker in/out.
+const BUILDING_SPACING = 96;
+const BUILDING_JITTER = 36;
+
+function landBuildings(fromX, toX) {
+  const start = Math.ceil(Math.max(WORLD.seaEnd + BUILDING_SPACING,
+    Math.floor((fromX - BUILDING_JITTER) / BUILDING_SPACING) * BUILDING_SPACING) /
+    BUILDING_SPACING) * BUILDING_SPACING;
+  const end = Math.min(WORLD.width - BUILDING_SPACING, toX + BUILDING_JITTER);
+  const result = [];
+  for (let cellX = start; cellX <= end; cellX += BUILDING_SPACING) {
+    if (hashUnit(cellX, 401) < 0.18) continue;
+    const x = cellX + Math.floor(hashUnit(cellX, 409) * (BUILDING_JITTER + 1));
+    const pick = hashUnit(cellX, 419);
+    result.push({
+      x,
+      y: surfaceY(x),
+      type: BUILDING_TYPES[Math.min(BUILDING_TYPES.length - 1,
+        Math.floor(pick * BUILDING_TYPES.length))],
+      flip: hashUnit(cellX, 421) < 0.5,
+      lit: hashUnit(cellX, 431) > 0.6
+    });
+  }
+  return result;
+}
+
+// Road traffic is derived from world cells plus elapsed time: no entity state,
+// so it cannot desynchronise with the simulation and costs nothing when offscreen.
+// A ping-pong path keeps every vehicle inside its cell instead of teleporting
+// back to the start when it reaches the end of a one-way wrap.
+const VEHICLE_SPACING = 260;
+const VEHICLE_SPAN = 170;
+const VEHICLE_BASE = 8;
+const VEHICLE_JITTER = 20;
+
+function roadVehicles(fromX, toX, time = 0) {
+  const start = Math.ceil(Math.max(WORLD.seaEnd + VEHICLE_SPACING,
+    Math.floor((fromX - VEHICLE_JITTER) / VEHICLE_SPACING) * VEHICLE_SPACING) /
+    VEHICLE_SPACING) * VEHICLE_SPACING;
+  const end = Math.min(WORLD.width - VEHICLE_SPACING - VEHICLE_SPAN, toX + VEHICLE_JITTER);
+  const result = [];
+  for (let cellX = start; cellX <= end; cellX += VEHICLE_SPACING) {
+    if (hashUnit(cellX, 443) < 0.22) continue;
+    const speed = 5 + hashUnit(cellX, 449) * 7;
+    const base = cellX + VEHICLE_BASE + Math.floor(hashUnit(cellX, 461) * VEHICLE_JITTER);
+    const phase = ((time * speed) % (VEHICLE_SPAN * 2) + VEHICLE_SPAN * 2) % (VEHICLE_SPAN * 2);
+    const forward = phase < VEHICLE_SPAN;
+    const offset = forward ? phase : VEHICLE_SPAN * 2 - phase;
+    const x = base + offset;
+    const pick = hashUnit(cellX, 463);
+    result.push({
+      x,
+      y: surfaceY(x),
+      direction: forward ? 1 : -1,
+      speed,
+      type: VEHICLE_TYPES[Math.min(VEHICLE_TYPES.length - 1,
+        Math.floor(pick * VEHICLE_TYPES.length))],
+      variant: pick
+    });
+  }
+  return result;
+}
+
+function seaFeatures(fromX, toX) {
+  const spacing = 108;
+  const start = Math.max(spacing, Math.floor(fromX / spacing) * spacing);
+  const end = Math.min(WORLD.seaEnd - 20, toX);
+  const result = [];
+  for (let cellX = start; cellX <= end; cellX += spacing) {
+    if (hashUnit(cellX, 131) < 0.35) continue;
+    const x = cellX + Math.floor(hashUnit(cellX, 149) * 34);
+    result.push({ x, y: 158 + Math.floor(hashUnit(cellX, 167) * 8), variant: hashUnit(cellX, 181) });
+  }
+  return result;
+}
+
+function seaIslands(fromX, toX) {
+  const spacing = 154;
+  const start = Math.max(spacing, Math.floor(fromX / spacing) * spacing);
+  const end = Math.min(WORLD.seaEnd - 60, toX);
+  const result = [];
+  for (let cellX = start; cellX <= end; cellX += spacing) {
+    if (hashUnit(cellX, 211) < 0.48) continue;
+    const width = 16 + Math.floor(hashUnit(cellX, 223) * 26);
+    // Keep the whole island inside the sea zone: the jitter plus width can
+    // otherwise cross the coastline once the route is stretched.
+    const x = Math.min(cellX + Math.floor(hashUnit(cellX, 227) * 60),
+      WORLD.seaEnd - width - 1);
+    result.push({
+      x,
+      width,
+      height: 3 + Math.floor(hashUnit(cellX, 233) * 5),
+      y: 30
+    });
+  }
+  return result;
+}
+
+function skyClouds(fromX, toX) {
+  const spacing = 132;
+  const start = Math.floor(fromX / spacing) * spacing;
+  const end = toX;
+  const result = [];
+  for (let cellX = start; cellX <= end; cellX += spacing) {
+    if (hashUnit(cellX, 251) < 0.35) continue;
+    result.push({
+      x: cellX + Math.floor(hashUnit(cellX, 263) * 70),
+      y: 7 + Math.floor(hashUnit(cellX, 269) * 13),
+      width: 13 + Math.floor(hashUnit(cellX, 271) * 15),
+      alpha: 0.16 + hashUnit(cellX, 277) * 0.14
+    });
+  }
+  return result;
+}
+
+function waveLayers() {
+  return Object.freeze([
+    { y: 42, length: 3, gap: 31, speed: 3, alpha: 0.20 },
+    { y: 51, length: 4, gap: 27, speed: 5, alpha: 0.24 },
+    { y: 62, length: 5, gap: 25, speed: 7, alpha: 0.26 },
+    { y: 78, length: 7, gap: 29, speed: 10, alpha: 0.28 },
+    { y: 96, length: 8, gap: 35, speed: 13, alpha: 0.30 },
+    { y: 116, length: 10, gap: 41, speed: 16, alpha: 0.30 },
+    { y: 138, length: 12, gap: 47, speed: 20, alpha: 0.28 },
+    { y: 160, length: 13, gap: 53, speed: 24, alpha: 0.24 }
+  ]);
+}
+
+// ---- src/rng.js ----
+// Deterministic PRNG (mulberry32) so sorties and tests are reproducible.
+
+function makeRng(seed = 1) {
+  let a = seed >>> 0;
+  return function next() {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), 1 | t);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function randRange(rng, min, max) {
+  return min + (max - min) * rng();
+}
+
+function randInt(rng, min, max) {
+  return Math.floor(randRange(rng, min, max + 1));
+}
+
+function pick(rng, items) {
+  return items[Math.floor(rng() * items.length)];
+}
+
+// ---- src/collision.js ----
+// Small pure geometry helpers shared by simulation and tests.
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function aabb(a, b) {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
+function circleAabb(cx, cy, radius, box) {
+  const nearestX = clamp(cx, box.x, box.x + box.w);
+  const nearestY = clamp(cy, box.y, box.y + box.h);
+  const dx = cx - nearestX;
+  const dy = cy - nearestY;
+  return dx * dx + dy * dy <= radius * radius;
+}
+
+function distance(ax, ay, bx, by) {
+  return Math.hypot(ax - bx, ay - by);
+}
+
+// ---- src/scoring.js ----
+// Pure scoring rules.
+
+function pointsFor(kind, multiplier = 1) {
+  const base = TARGET_POINTS[kind] ?? 0;
+  return Math.round(base * multiplier);
+}
+
+function landingBonus(fuel, multiplier = 1) {
+  return Math.round((500 + Math.max(0, fuel) * 5) * multiplier);
+}
+
+function formatScore(value) {
+  return String(Math.max(0, Math.round(value))).padStart(6, '0');
+}
+
+// ---- src/storage.js ----
+// Versioned localStorage helpers with injectable stores for tests.
+
+function browserStore() {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeEntry(entry) {
+  if (!entry || typeof entry.score !== 'number' || !Number.isFinite(entry.score)) return null;
+  const name = String(entry.name ?? 'AAA').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3).padEnd(3, 'A');
+  return {
+    name,
+    score: Math.max(0, Math.round(entry.score)),
+    level: Math.max(1, Math.round(entry.level ?? 1)),
+    hits: Math.max(0, Math.round(entry.hits ?? 0)),
+    sortie: Math.max(1, Math.round(entry.sortie ?? 1)),
+    date: typeof entry.date === 'string' ? entry.date : new Date().toISOString()
+  };
+}
+
+function normalizeScores(list, limit = HIGH_SCORE_LIMIT) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map(normalizeEntry)
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+    .slice(0, limit);
+}
+
+function qualifies(score, list, limit = HIGH_SCORE_LIMIT) {
+  const scores = normalizeScores(list, limit);
+  if (score <= 0) return false;
+  return scores.length < limit || score > scores[scores.length - 1].score;
+}
+
+function insertScore(list, entry, limit = HIGH_SCORE_LIMIT) {
+  const clean = normalizeEntry(entry);
+  if (!clean) return normalizeScores(list, limit);
+  return normalizeScores([...(Array.isArray(list) ? list : []), clean], limit);
+}
+
+function loadScores(store = browserStore()) {
+  if (!store) return [];
+  try {
+    const raw = store.getItem(HIGH_SCORE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (parsed?.version !== 1) return [];
+    return normalizeScores(parsed.scores);
+  } catch {
+    return [];
+  }
+}
+
+function saveScores(list, store = browserStore()) {
+  if (!store) return false;
+  try {
+    store.setItem(HIGH_SCORE_KEY, JSON.stringify({ version: 1, scores: normalizeScores(list) }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function loadSettings(store = browserStore()) {
+  const fallback = { muted: false, scanlines: true, skill: 1 };
+  if (!store) return fallback;
+  try {
+    const parsed = JSON.parse(store.getItem(SETTINGS_KEY) ?? 'null');
+    if (parsed?.version !== 1) return fallback;
+    return {
+      muted: Boolean(parsed.settings?.muted),
+      scanlines: parsed.settings?.scanlines !== false,
+      skill: Math.min(5, Math.max(1, Math.round(parsed.settings?.skill ?? 1)))
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveSettings(settings, store = browserStore()) {
+  if (!store) return false;
+  try {
+    store.setItem(SETTINGS_KEY, JSON.stringify({
+      version: 1,
+      settings: {
+        muted: Boolean(settings.muted),
+        scanlines: settings.scanlines !== false,
+        skill: Math.min(5, Math.max(1, Math.round(settings.skill ?? 1)))
+      }
+    }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearScores(store = browserStore()) {
+  if (!store) return false;
+  try {
+    store.removeItem(HIGH_SCORE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ---- src/sprites.js ----
+// Original pixel-art sprite data. Palette letters map to src/config.js colours.
+
+const CHAR_COLORS = Object.freeze({
+  K: PALETTE.black, D: PALETTE.dark, C: PALETTE.cyan, B: PALETTE.blue,
+  Y: PALETTE.yellow, R: PALETTE.red, W: PALETTE.white, G: PALETTE.gray,
+  N: PALETTE.green, S: PALETTE.steel, s: PALETTE.steelDark, H: PALETTE.hull,
+  O: PALETTE.orange, F: PALETTE.foam, A: PALETTE.sand, a: PALETTE.sandDark,
+  L: PALETTE.grass, l: PALETTE.grassDark, t: PALETTE.brown
+});
+
+const SPRITES = Object.freeze({
+  harrier: [
+    '....................',
+    '...R................',
+    '...WW.....WWWWW.....',
+    '...WYW...WCCCCCW....',
+    '..WYYYYWYYYYYYYYYW..',
+    '.WYYYYYYYYYYYYYYYYYW',
+    'WSSYYYYYYYYYYYYYYYYW',
+    'WSSYYYYYYRRYYYYYYYYW',
+    '.WWWYYYYYRRYYYYYYYWW',
+    '...WYYYYYYYYYYYYYW..',
+    '....WWWWWWWWWWWWW...',
+    '.......SS...SS......',
+  ],
+  ship: [
+    '.......................',
+    '..........WWWW.........',
+    '.........WYYYYW........',
+    '........WYYYYYYW.......',
+    '...WWW..WYYSSYYW..WWW..',
+    '..WYYWWWWYYYYYYWWWWYYW.',
+    '.WYYYYYYYYYYYYYYYYYYYYW',
+    '.WYSSSSSSSSSSSSSSSSYYW.',
+    '..WWWWWWWWWWWWWWWWWWW..',
+    '.......................',
+  ],
+  interceptor: [
+    '.......W........',
+    '......WYW.......',
+    '.....WYYYYW.....',
+    '...WWYYYYYYWW...',
+    '..WYYYYRRYYYYW..',
+    '...WWYYYYYYWW...',
+    '.....WW..WW.....',
+    '................',
+  ],
+  radar: [
+    '......W.......',
+    '.....WYW......',
+    '....WYYYYW....',
+    '...WYYYYYYW...',
+    '..WYYYYYYYYW..',
+    '..WYCCCCCCYW..',
+    '...WYYYYYYW...',
+    '....WYYYYW....',
+    '.....WYYW.....',
+    '.....WSSW.....',
+    '....WWSSWW....',
+    '...WWWWWWWW...',
+  ],
+  depot: [
+    '...................',
+    '...WWWWWWWWWWWW....',
+    '..WOOOOOOOOOOOOOW..',
+    '..WYYYYYYYYYYYYYW..',
+    '..WYKYYWYYWYYKYW...',
+    '..WYKYYWYYWYYKYW...',
+    '..WYKYYWYYWYYKYW...',
+    '..WYYYYYYYYYYYYYW..',
+    '..WWWSSWWWWSSWWW...',
+    '..WWWWWWWWWWWWWW...',
+    '...................',
+  ],
+  flak: [
+    '.....W......',
+    '....WYW.....',
+    '...WYYYYW...',
+    '..WYYRRYYW..',
+    '..WYYYYYYW..',
+    '...WYYYYW...',
+    '....WSSW....',
+    '....WSSW....',
+    '...WWSSWW...',
+    '..WWWWWWWW..',
+  ],
+  missile: [
+    '....W....',
+    '..WWRWW..',
+    '.WYYYYYW.',
+    '..WWWWW..',
+    '...W..W..',
+  ],
+  palm: [
+    '......LLL....',
+    '.....LLLLL...',
+    '..LLLLLLLLL..',
+    '.LLLLLLLLLLL.',
+    'LLLLLLLLLLLLL',
+    '.LLLLLLLLLLL.',
+    '..LLLLLLLLL..',
+    '.....tt......',
+    '.....tt......',
+    '.....tt......',
+    '....tt.......',
+    '....tt.......',
+  ],
+  rock: [
+    '..SSSSSS..',
+    '.SGGGGGGS.',
+    'SGSSSSSSGS',
+    'SGGGGGGGGS',
+    '.SSSSSSSS.',
+  ],
+  bush: [
+    '..L....L..',
+    '.LLLLLLLL.',
+    'LLLLLLLLLL',
+    'LLLLlLLLLL',
+    '.LLLLLLLL.',
+    '..LLLLLL..',
+  ],
+  tuft: [
+    '.L....L.',
+    'LLL..LLL',
+    '.LLLLLL.',
+    '..LLLL..',
+    '...LL...',
+  ],
+  hangar: [
+    '................',
+    '..WWWWWWWWWWWW..',
+    '.WSSSSSSSSSSSSW.',
+    '.WYKYYWYYWYYKYW.',
+    '.WYKYYWYYWYYKYW.',
+    '.WYYYYYYYYYYYYW.',
+    '.WWWWWWWWWWWWWW.',
+    '................',
+  ],
+  crate: [
+    '.tttttt.',
+    'tttttttt',
+    'tOOttOOt',
+    'tOOttOOt',
+    'tttttttt',
+    '.tttttt.',
+  ],
+  barrel: [
+    '..WW..',
+    '.WSSW.',
+    'WSSSSW',
+    'WSSSSW',
+    'WSSSSW',
+    'WSSSSW',
+    '.WSSW.',
+    '..WW..',
+  ],
+  antenna: [
+    '....W....',
+    '....W....',
+    '...WYW...',
+    '...WYW...',
+    '..WYYYW..',
+    '..WYYYW..',
+    '.WYYYYYW.',
+    '.WYYYYYW.',
+    'WYYYYYYYW',
+    '...WYW...',
+    '...WYW...',
+    '..WWWWW..',
+  ],
+  house: [
+    '.....OOOOOO.....',
+    '....OOOOOOOO....',
+    '...OOOOOOOOOO...',
+    '..OOOOOOOOOOOO..',
+    '.WWWWWWWWWWWWWW.',
+    '.WYYYYYYYYYYYYW.',
+    '.WYCWWYYYYWWCYW.',
+    '.WYCWWYYYYWWCYW.',
+    '.WYYYYYYYYYYYYW.',
+    '.WYYYYYttYYYYYW.',
+    '.WYYYYYttYYYYYW.',
+    '.WYYYYYYYYYYYYW.',
+    '..WWWWWWWWWWWW..',
+  ],
+  cottage: [
+    '....RRRR....',
+    '...RRRRRR...',
+    '..RRRRRRRR..',
+    '.WWWWWWWWWW.',
+    '.WYYYYYYYYW.',
+    '.WYCYYYCYYW.',
+    '.WYYYYYYYYW.',
+    '.WYYYYttYYW.',
+    '.WYYYYYYYYW.',
+    '..SSSSSSSS..',
+  ],
+  truck: [
+    '................',
+    '..WWWWWWWWWWWW..',
+    '.WOOOOOOOOOOWYW.',
+    '.WOOOOOOOOOOWYW.',
+    '.WOOOOOOOOOOWWW.',
+    '.WOOOOOOOOOOWYW.',
+    '.WKKKKKKKKKKKKK.',
+    '..KK..KK..KK.KK.',
+  ],
+  // v0.9: original local variants so the coast village never repeats every
+  // screen. Every row stays rectangular and uses only the shared palette.
+  van: [
+    '..............',
+    '..WWWWWWWWWW..',
+    '.WCCCCCCCCCCW.',
+    '.WCCCCCCCCCCW.',
+    '.WCCCCCCCCCCW.',
+    '.WWWWWWWWWWWW.',
+    '.WKKKKKKKKKKW.',
+    '..KK..KK..KK..',
+  ],
+  pickup: [
+    '..............',
+    '..WWWWWW..WW..',
+    '.WRRRRRRWWWWW.',
+    '.WRRRRRRWWWWW.',
+    '.WRRRRRRRRRRR.',
+    '.WKKKKKKKKKKK.',
+    '..KK..KK..KK..',
+  ],
+  farmhouse: [
+    '......RRRRR......',
+    '....RRRRRRRRR....',
+    '...RRRRRRRRRRR...',
+    '..RRRRRRRRRRRRR..',
+    '.WWWWWWWWWWWWWWW.',
+    '.WYYYYYYYYYYYYYW.',
+    '.WYCYYYWYYYWYYCW.',
+    '.WYCYYYWYYYWYYCW.',
+    '.WYYYYYYYYYYYYYW.',
+    '.WYYYYYttYYYYYYW.',
+    '.WYYYYYttYYYYYYW.',
+    '.WYYYYYYYYYYYYYW.',
+    '..SSSSSSSSSSSSS..',
+  ],
+  shop: [
+    '.....CCCCCC.....',
+    '....CWWWWWWC....',
+    '...CWWWWWWWWC...',
+    '..CWWWWWWWWWWC..',
+    '..WCCCCCCCCCCW..',
+    '..WCYWWWWWWYCW..',
+    '..WCYWWWWWWYCW..',
+    '..WCCCCCCCCCCW..',
+    '..WYYYYYYYYYYW..',
+    '..WYYYYttYYYYW..',
+    '..WYYYYttYYYYW..',
+    '..SSSSSSSSSSSS..',
+  ],
+  pine: [
+    '.....N.....',
+    '....NNN....',
+    '...NNNNN...',
+    '..NLNNNLN..',
+    '.NNLNNNLNN.',
+    'NNNLNNNLNNN',
+    '....NNN....',
+    '....NNN....',
+    '...NLNLN...',
+    '..NNLNLNN..',
+    '.....t.....',
+    '.....t.....',
+  ],
+  oak: [
+    '....NNNNN....',
+    '..NNNNNNNNN..',
+    '.NLNNNNNNNLN.',
+    'NNNLNNNLNNNLN',
+    'NNNNNNNNNNNNN',
+    '.NNNNLNNLNNN.',
+    '..NNNtttNNN..',
+    '.....ttt.....',
+    '.....ttt.....',
+  ],
+  deadTree: [
+    '...t...t...',
+    '....t.t....',
+    '.....t.....',
+    '...ttttt...',
+    '....t.t....',
+    '....t.t....',
+    '...t...t...',
+  ],
+});
+
+
+
+function spriteWidth(name) {
+  const rows = SPRITES[name];
+  return rows ? Math.max(...rows.map((row) => row.length)) : 0;
+}
+
+function spriteHeight(name) {
+  return SPRITES[name]?.length ?? 0;
+}
+
+function drawSprite(ctx, name, x, y, { flip = false, alpha = 1 } = {}) {
+  const rows = SPRITES[name];
+  if (!rows) return;
+  const width = spriteWidth(name);
+  const previousAlpha = ctx.globalAlpha;
+  ctx.globalAlpha = alpha;
+  for (let row = 0; row < rows.length; row += 1) {
+    const line = rows[row];
+    for (let col = 0; col < line.length; col += 1) {
+      const color = CHAR_COLORS[line[col]];
+      if (!color) continue;
+      const px = flip ? width - line.length + (line.length - 1 - col) : col;
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(x + px), Math.round(y + row), 1, 1);
+    }
+  }
+  ctx.globalAlpha = previousAlpha;
+}
+
+// ---- src/game.js ----
+// Pure game simulation. No DOM, Canvas or Audio APIs are used here.
+
+const STATES = Object.freeze({
+  TITLE: 'TITLE',
+  SKILL_SELECT: 'SKILL_SELECT',
+  PLAY: 'PLAY',
+  PAUSED: 'PAUSED',
+  GAME_OVER: 'GAME_OVER',
+  NAME_ENTRY: 'NAME_ENTRY',
+  HIGH_SCORES: 'HIGH_SCORES',
+  TEST_RESULT: 'TEST_RESULT'
+});
+
+const PHASES = Object.freeze({
+  TAKEOFF: 'TAKEOFF',
+  SEA: 'SEA',
+  COAST: 'COAST',
+  RETURN: 'RETURN',
+  LANDING: 'LANDING'
+});
+
+const EMPTY_ACTIONS = Object.freeze({});
+
+function readActions(input) {
+  return input?.actions ?? EMPTY_ACTIONS;
+}
+
+function readPressed(input) {
+  return input?.pressed ?? EMPTY_ACTIONS;
+}
+
+function entity(type, x, y, extra = {}) {
+  return {
+    id: extra.id ?? 0,
+    type,
+    x,
+    y,
+    w: extra.w ?? 8,
+    h: extra.h ?? 8,
+    vx: extra.vx ?? 0,
+    vy: extra.vy ?? 0,
+    hp: extra.hp ?? 1,
+    faction: extra.faction ?? 'enemy',
+    // Persistent targets must set no ttl; only projectiles and effects expire.
+    ttl: extra.ttl ?? Infinity,
+    duration: extra.duration ?? extra.ttl ?? Infinity,
+    timer: extra.timer ?? 0,
+    angle: extra.angle ?? 0,
+    radius: extra.radius ?? 0,
+    dead: false,
+    scored: false
+  };
+}
+
+class Game {
+  constructor({ seed = Date.now(), store, onEvent = () => {} } = {}) {
+    this.rng = makeRng(seed);
+    this.store = store;
+    this.onEvent = typeof onEvent === 'function' ? onEvent : () => {};
+    this.state = STATES.TITLE;
+    this.phase = PHASES.TAKEOFF;
+    this.skillIndex = 1;
+    this.sortie = 1;
+    this.score = 0;
+    this.lives = PLAYER.startLives;
+    this.highScores = loadScores(this.store);
+    this.highScore = this.highScores[0]?.score ?? 0;
+    this.fuel = 100;
+    this.bombs = PLAYER.startBombs;
+    this.rockets = PLAYER.startRockets;
+    this.kills = 0;
+    this.shots = 0;
+    this.elapsed = 0;
+    this.missionTime = 0;
+    this.cameraX = 0;
+    this.message = '';
+    this.messageTimer = 0;
+    this.landingTime = 0;
+    this.shake = 0;
+    this.flash = 0;
+    this.respawnTimer = 0;
+    this.lastAlive = null;
+    this.ammoWarning = 0;
+    this.ammoWarningText = '';
+    this.ammoWarningLevel = 0;
+    this.dryFireTimer = 0;
+    this.dryFireText = '';
+    this.dryFireKind = '';
+    this.turnTimer = 0;
+    this.testMode = false;
+    this.testResult = null;
+    this.testTicks = 0;
+    this.name = '';
+    this.pendingScore = 0;
+    this.entities = [];
+    this.entityId = 0;
+    this.player = this.makePlayer();
+    this.cooldowns = { cannon: 0, rocket: 0, bomb: 0 };
+  }
+
+  emit(type, data = {}) {
+    this.onEvent({ type, ...data });
+  }
+
+  makePlayer() {
+    return {
+      worldX: 18,
+      y: 146,
+      x: 18,
+      vx: 0,
+      vy: 0,
+      w: PLAYER.w,
+      h: PLAYER.h,
+      invuln: 1.6,
+      alive: true
+    };
+  }
+
+  get skill() {
+    return SKILLS[this.skillIndex];
+  }
+
+  get difficulty() {
+    return 1 + (this.sortie - 1) * 0.15;
+  }
+
+  setMessage(text, seconds = 2.6) {
+    this.message = text;
+    this.messageTimer = seconds;
+  }
+
+  resetMission() {
+    this.phase = PHASES.TAKEOFF;
+    this.missionTime = 0;
+    this.landingTime = 0;
+    this.cameraX = 0;
+    this.fuel = clamp(100 * this.skill.fuelUse + (this.sortie - 1) * 1.5, 70, 100);
+    this.bombs = PLAYER.startBombs;
+    this.rockets = PLAYER.startRockets;
+    // Per-mission cannon/rocket/bomb shot counter; kills remain cumulative
+    // across lives and sorties for the high-score entry.
+    this.shots = 0;
+    // A new sortie must never inherit a pending death pause or warning from
+    // the previous one (e.g. quitting to title during the frozen frame).
+    this.respawnTimer = 0;
+    this.lastAlive = null;
+    this.ammoWarning = 0;
+    this.ammoWarningText = '';
+    this.ammoWarningLevel = 0;
+    this.dryFireTimer = 0;
+    this.dryFireText = '';
+    this.dryFireKind = '';
+    this.turnTimer = 0;
+    this.player = this.makePlayer();
+    this.entities = [];
+    this.entityId = 0;
+    this.cooldowns = { cannon: 0, rocket: 0, bomb: 0 };
+    this.spawnEntities();
+    this.setMessage(`SORTIE ${this.sortie} - TAKE OFF`, 3);
+  }
+
+  nextId() {
+    this.entityId += 1;
+    return this.entityId;
+  }
+
+  add(type, x, y, extra = {}) {
+    const item = entity(type, x, y, { ...extra, id: this.nextId() });
+    this.entities.push(item);
+    return item;
+  }
+
+  spawnEntities() {
+    const d = this.difficulty * this.skill.spawn;
+
+    // v0.4: the stretched sea needs three times as many patrols to keep the
+    // original encounter density without making the flight itself slower.
+    const shipCount = (3 + Math.min(3, Math.floor(this.sortie / 2))) * WORLD.targetDensity;
+    const shipSpan = WORLD.shipPatrolMax - WORLD.shipPatrolMin;
+    for (let i = 0; i < shipCount; i += 1) {
+      const x = WORLD.shipPatrolMin + ((i + 0.5) * shipSpan / shipCount) +
+        randRange(this.rng, -18, 18);
+      this.add('ship', x, 160, {
+        w: 18, h: 7, hp: 2, timer: randRange(this.rng, 1.5, 4.5) / d,
+        vx: randRange(this.rng, -8, 8)
+      });
+    }
+
+    const interceptorCount = 4 + Math.min(5, Math.floor(this.sortie * 0.8));
+    for (let i = 0; i < interceptorCount; i += 1) {
+      // Spread initial interceptors over the whole stretched world; they
+      // recycle around the camera afterwards, so their count stays unchanged.
+      const x = 10 + ((worldX(280) + i * worldX(155)) % (WORLD.width - 20)) +
+        randRange(this.rng, -30, 30);
+      this.add('interceptor', x, randRange(this.rng, 38, 96), {
+          w: 14, h: 7, hp: 1,
+          vx: -randRange(this.rng, 18, 32) * this.skill.speed,
+          timer: randRange(this.rng, 0.8, 2.8) / d
+        });
+    }
+
+    const coastPattern = [
+      ['radar', 745, 138, 3],
+      ['depot', 835, 142, 3],
+      ['flak', 925, 140, 2],
+      ['depot', 1015, 142, 3],
+      ['radar', 1105, 138, 3],
+      ['flak', 1195, 140, 2]
+    ];
+    const coastTargets = [];
+    const patternStep = worldX(450) / WORLD.targetDensity;
+    for (let repeat = 0; repeat < WORLD.targetDensity; repeat += 1) {
+      for (const [type, baseX, y, hp] of coastPattern) {
+        const x = worldX(745) +
+          (baseX - 745) * (WORLD.lengthScale / WORLD.targetDensity) +
+          repeat * patternStep;
+        coastTargets.push([type, x, y, hp]);
+      }
+    }
+    const extraTargets = Math.min(4, Math.floor((this.sortie - 1) * this.skill.flak)) *
+      WORLD.targetDensity;
+    for (let i = 0; i < extraTargets; i += 1) {
+      coastTargets.push([
+        i % 2 === 0 ? 'flak' : 'depot',
+        worldX(790) + i * worldX(105) / WORLD.targetDensity,
+        142,
+        2
+      ]);
+    }
+    for (const [type, x, y, hp] of coastTargets) {
+      this.add(type, x, y, {
+        w: type === 'depot' ? 16 : 12,
+        h: type === 'radar' ? 12 : 9,
+        hp: hp + Math.floor((this.sortie - 1) / 3),
+        timer: randRange(this.rng, 1.2, 3.4) / d
+      });
+    }
+  }
+
+  update(dt, input) {
+    dt = clamp(dt, 0, 0.1);
+    this.elapsed += dt;
+    const actions = this.testMode && this.state === STATES.PLAY
+      ? autopilotActions(this)
+      : readActions(input);
+    const pressed = readPressed(input);
+    const typed = typeof input?.typed === 'string' ? input.typed : '';
+
+    if (this.messageTimer > 0) this.messageTimer = Math.max(0, this.messageTimer - dt);
+    if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 2.5);
+    if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 4);
+    if (this.ammoWarning > 0) this.ammoWarning = Math.max(0, this.ammoWarning - dt);
+    if (this.dryFireTimer > 0) this.dryFireTimer = Math.max(0, this.dryFireTimer - dt);
+    if (this.turnTimer > 0) this.turnTimer = Math.max(0, this.turnTimer - dt);
+
+    if (pressed.test) {
+      this.toggleTestMode();
+      return;
+    }
+
+    switch (this.state) {
+      case STATES.TITLE:
+        if (pressed.confirm) {
+          this.state = STATES.SKILL_SELECT;
+          this.emit('ui');
+        }
+        break;
+      case STATES.SKILL_SELECT:
+        if (pressed.left) this.skillIndex = (this.skillIndex + SKILLS.length - 1) % SKILLS.length;
+        if (pressed.right) this.skillIndex = (this.skillIndex + 1) % SKILLS.length;
+        if (pressed.back) {
+          this.state = STATES.TITLE;
+          this.emit('ui');
+        }
+        if (pressed.confirm) this.startGame();
+        break;
+      case STATES.PLAY:
+        if (pressed.pause) {
+          this.state = STATES.PAUSED;
+          this.emit('ui');
+          break;
+        }
+        this.updatePlay(dt, actions, pressed);
+        break;
+      case STATES.PAUSED:
+        if (pressed.pause || pressed.confirm) {
+          this.state = STATES.PLAY;
+          this.emit('ui');
+        } else if (pressed.back) {
+          this.state = STATES.TITLE;
+          this.emit('ui');
+        }
+        break;
+      case STATES.GAME_OVER:
+        if (pressed.confirm) {
+          if (this.qualifies) {
+            this.state = STATES.NAME_ENTRY;
+            this.name = '';
+          } else {
+            this.state = STATES.HIGH_SCORES;
+          }
+          this.emit('ui');
+        } else if (pressed.back) {
+          this.state = STATES.TITLE;
+        }
+        break;
+      case STATES.NAME_ENTRY:
+        this.updateNameEntry(typed, pressed);
+        break;
+      case STATES.HIGH_SCORES:
+        if (pressed.confirm || pressed.back) {
+          this.state = STATES.TITLE;
+          this.emit('ui');
+        }
+        break;
+      case STATES.TEST_RESULT:
+        if (pressed.confirm || pressed.back) {
+          this.testMode = false;
+          this.testResult = null;
+          this.state = STATES.TITLE;
+          this.emit('ui');
+        }
+        break;
+      default:
+        this.state = STATES.TITLE;
+    }
+  }
+
+  updateNameEntry(typed, pressed) {
+    // A non-qualifying score must never reach this screen: fail closed.
+    if (!this.qualifies || this.pendingScore <= 0) {
+      this.state = STATES.HIGH_SCORES;
+      return;
+    }
+    if (pressed.backspace) this.name = this.name.slice(0, -1);
+    for (const char of typed) {
+      if (this.name.length >= 3) break;
+      if (/[a-z0-9]/i.test(char)) this.name += char.toUpperCase();
+    }
+    if (pressed.confirm && this.name.length > 0) {
+      this.name = this.name.padEnd(3, 'A');
+      const entry = normalizeEntry({
+        name: this.name,
+        score: this.pendingScore,
+        level: this.skillIndex + 1,
+        hits: this.kills,
+        sortie: this.sortie,
+        date: new Date().toISOString()
+      });
+      this.highScores = insertScore(this.highScores, entry);
+      this.highScore = this.highScores[0]?.score ?? this.pendingScore;
+      saveScores(this.highScores, this.store);
+      this.state = STATES.HIGH_SCORES;
+      this.setMessage('SCORE REGISTERED', 2);
+      this.emit('ui');
+    }
+  }
+
+  toggleTestMode() {
+    this.testMode = !this.testMode;
+    if (!this.testMode) {
+      this.testResult = null;
+      this.state = STATES.TITLE;
+      this.emit('ui');
+      return;
+    }
+    // A fixed seed and PILOT skill make a test flight reproducible across
+    // reloads; the autopilot still plays through ordinary actions only.
+    this.rng = makeRng(TEST_FLIGHT.seed);
+    this.skillIndex = 1;
+    this.score = 0;
+    this.lives = PLAYER.startLives;
+    this.sortie = 1;
+    this.elapsed = 0;
+    this.testTicks = 0;
+    this.testResult = null;
+    this.state = STATES.PLAY;
+    this.resetMission();
+    this.setMessage('AUTO TEST - DODGE AND LAND', 3);
+    this.emit('ui');
+  }
+
+  startGame() {
+    if (this.testMode) {
+      this.rng = makeRng(TEST_FLIGHT.seed);
+      this.testTicks = 0;
+      this.testResult = null;
+    }
+    this.score = 0;
+    this.lives = PLAYER.startLives;
+    this.sortie = 1;
+    this.elapsed = 0;
+    this.state = STATES.PLAY;
+    this.resetMission();
+    this.emit('ui');
+  }
+
+  fireCannon() {
+    const p = this.player;
+    this.add('bullet', p.worldX + p.w, p.y + 3, {
+      w: 4, h: 2, vx: 190, vy: 0, ttl: 1.4, faction: 'player'
+    });
+    this.shots += 1;
+    this.emit('shot');
+  }
+
+  fireRocket() {
+    const p = this.player;
+    this.rockets -= 1;
+    this.add('rocket', p.worldX + p.w, p.y + 1, {
+      w: 6, h: 3, vx: 140, vy: p.vy * 0.3, hp: 3, ttl: 2.2, faction: 'player'
+    });
+    this.warnLowAmmo('rocket', this.rockets);
+    this.emit('rocket');
+  }
+
+  warnLowAmmo(kind, remaining) {
+    const noun = kind === 'rocket' ? 'ROCKET' : 'BOMB';
+    let text;
+    if (remaining === 0) text = `${noun}S OUT`;
+    else if (remaining <= FEEDBACK.lowAmmoCount) {
+      text = `${remaining} ${noun}${remaining === 1 ? '' : 'S'} LEFT`;
+    } else return;
+    this.ammoWarningText = text;
+    this.ammoWarningLevel = remaining;
+    this.ammoWarning = FEEDBACK.warningSeconds;
+    this.emit('lowammo');
+  }
+
+  // A pressed trigger with no stock is visibly acknowledged instead of being
+  // silently swallowed by the old `rockets > 0` firing guard.
+  dryFire(kind) {
+    const noun = kind === 'rocket' ? 'ROCKET' : 'BOMB';
+    this.dryFireKind = kind;
+    this.dryFireText = `${noun}S EMPTY - TRIGGER RECEIVED`;
+    this.dryFireTimer = FEEDBACK.dryFireSeconds;
+    this.emit('dryfire');
+  }
+
+  dropBomb() {
+    const p = this.player;
+    this.bombs -= 1;
+    this.add('bomb', p.worldX + 5, p.y + PLAYER.h, {
+      w: 3, h: 4, vx: p.vx * 0.45, vy: Math.max(12, p.vy), ttl: 3.5, faction: 'player'
+    });
+    this.warnLowAmmo('bomb', this.bombs);
+    this.emit('bomb');
+  }
+
+  enemyProjectile(type, source, vx, vy, extra = {}) {
+    this.add(type, source.x + source.w / 2, source.y + source.h / 2, {
+      w: extra.w ?? 3,
+      h: extra.h ?? 3,
+      vx,
+      vy,
+      ttl: extra.ttl ?? 4,
+      faction: 'enemy',
+      timer: extra.timer ?? 0
+    });
+  }
+
+  aimAtPlayer(source, speed) {
+    const dx = this.player.worldX - source.x;
+    const dy = this.player.y - source.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    return { vx: (dx / distance) * speed, vy: (dy / distance) * speed };
+  }
+
+  damage(enemy, amount) {
+    if (enemy.dead) return;
+    enemy.hp -= amount;
+    this.shake = Math.max(this.shake, 0.12);
+    if (enemy.hp <= 0) this.destroy(enemy);
+  }
+
+  destroy(enemy) {
+    if (enemy.dead) return;
+    enemy.dead = true;
+    if (enemy.faction === 'enemy' && !enemy.scored) {
+      enemy.scored = true;
+      this.score += pointsFor(enemy.type, this.skill.multiplier);
+      this.kills += 1;
+      this.emit('explosion');
+    }
+    this.add('explosion', enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, {
+      w: 1, h: 1, ttl: 0.45, radius: enemy.type === 'ship' ? 14 : 9,
+      faction: 'neutral'
+    });
+  }
+
+  explodeBomb(bomb) {
+    const cx = bomb.x + bomb.w / 2;
+    const cy = bomb.y + bomb.h / 2;
+    const radius = 24;
+    for (const target of this.entities) {
+      if (target.dead || target.faction !== 'enemy') continue;
+      const tx = target.x + target.w / 2;
+      const ty = target.y + target.h / 2;
+      if (Math.hypot(cx - tx, cy - ty) <= radius + Math.max(target.w, target.h) / 2) {
+        this.damage(target, 2);
+      }
+    }
+    this.add('explosion', cx, cy, {
+      w: 1, h: 1, ttl: 0.55, radius, faction: 'neutral'
+    });
+    this.shake = Math.max(this.shake, 0.25);
+    this.emit('explosion');
+    bomb.dead = true;
+  }
+
+  updatePlay(dt, actions, pressed) {
+    // v0.7: the frozen death pause keeps the world, fuel and mission clock
+    // unchanged. The aircraft stays absent until respawn() restores it.
+    if (this.respawnTimer > 0) {
+      this.respawnTimer = Math.max(0, this.respawnTimer - dt);
+      if (this.respawnTimer === 0) this.respawn();
+      return;
+    }
+    const p = this.player;
+    this.missionTime += dt;
+    if (this.testMode) this.testTicks += 1;
+
+    for (const key of Object.keys(this.cooldowns)) {
+      this.cooldowns[key] = Math.max(0, this.cooldowns[key] - dt);
+    }
+
+    const fuelCost = PLAYER.fuelRate * this.skill.fuelUse +
+      (actions.up ? PLAYER.climbFuel : 0);
+    this.fuel = Math.max(0, this.fuel - fuelCost * dt);
+    if (this.fuel <= 0) {
+      this.crash('OUT OF FUEL');
+      return;
+    }
+
+    let ax = 0;
+    let ay = 0;
+    if (actions.left) ax -= PLAYER.accel;
+    if (actions.right) ax += PLAYER.accel;
+    if (actions.up) ay -= PLAYER.accel;
+    if (actions.down) ay += PLAYER.accel;
+
+    p.vx += ax * dt;
+    p.vy += ay * dt;
+    if (!actions.left && !actions.right) p.vx *= Math.pow(PLAYER.drag, dt * 60);
+    if (!actions.up && !actions.down) p.vy *= Math.pow(PLAYER.drag, dt * 60);
+
+    const speedScale = this.skill.speed;
+    p.vx = clamp(p.vx, -PLAYER.maxVx * speedScale, PLAYER.maxVx * speedScale);
+    p.vy = clamp(p.vy, -PLAYER.maxVy * speedScale, PLAYER.maxVy * speedScale);
+    p.worldX = clamp(p.worldX + p.vx * dt, 0, WORLD.width);
+    p.y = clamp(p.y + p.vy * dt, 18, VIEW_H - 12);
+    if (this.phase === PHASES.TAKEOFF && p.worldX > 58 && p.y >= 132) {
+      // VTOL gate: the jet cannot leave the deck until it climbs. Without this
+      // boundary a level take-off silently skipped every mission phase.
+      p.worldX = 58;
+      p.vx = Math.min(0, p.vx);
+      if (this.messageTimer <= 0) this.setMessage('CLIMB TO TAKE OFF', 0.8);
+    }
+    p.x = p.worldX - this.cameraX;
+    p.invuln = Math.max(0, p.invuln - dt);
+
+    this.cameraX = clamp(p.worldX - 86, 0, WORLD.width - VIEW_W);
+    p.x = p.worldX - this.cameraX;
+
+    if (actions.fire && this.cooldowns.cannon <= 0) {
+      this.fireCannon();
+      this.cooldowns.cannon = PLAYER.cannonCooldown;
+    }
+    if (actions.rocket && this.cooldowns.rocket <= 0) {
+      if (this.rockets > 0) this.fireRocket();
+      else this.dryFire('rocket');
+      this.cooldowns.rocket = PLAYER.rocketCooldown;
+    }
+    if ((pressed.bomb || actions.bomb) && this.cooldowns.bomb <= 0) {
+      if (this.bombs > 0) this.dropBomb();
+      else this.dryFire('bomb');
+      this.cooldowns.bomb = PLAYER.bombCooldown;
+    }
+
+    this.updateEntities(dt);
+    this.resolveCollisions();
+    if (this.state !== STATES.PLAY || this.player !== p) return;
+    this.updatePhase(dt);
+
+    if (this.state !== STATES.PLAY || this.player !== p) return;
+
+    const floor = p.worldX >= WORLD.seaEnd ? WORLD.landFloor : WORLD.seaFloor;
+    if (p.y + p.h >= floor && this.phase !== PHASES.LANDING) {
+      this.crash(p.worldX >= WORLD.seaEnd ? 'TERRAIN IMPACT' : 'SEA IMPACT');
+    }
+
+    const expiredBombs = [];
+    this.entities = this.entities.filter((item) => {
+      if (item.dead) return false;
+      if (item.ttl <= 0) {
+        // explodeBomb() adds a new entity (and damages targets), so defer it
+        // until after filter() has produced the new array.
+        if (item.type === 'bomb') expiredBombs.push(item);
+        return false;
+      }
+      const farLeft = this.cameraX - 120;
+      const farRight = this.cameraX + VIEW_W + 180;
+      if (item.faction === 'player' && item.type !== 'explosion') {
+        return item.x >= farLeft && item.x <= farRight && item.y > -20 && item.y < VIEW_H + 20;
+      }
+      return true;
+    });
+    for (const bomb of expiredBombs) this.explodeBomb(bomb);
+  }
+
+  updateEntities(dt) {
+    const p = this.player;
+    const d = this.difficulty * this.skill.spawn;
+    const leftEdge = this.cameraX - 50;
+    const rightEdge = this.cameraX + VIEW_W + 70;
+
+    for (const item of this.entities) {
+      if (item.dead) continue;
+      item.ttl -= dt;
+      item.timer -= dt;
+
+      switch (item.type) {
+        case 'bullet':
+        case 'rocket':
+          item.x += item.vx * dt;
+          item.y += item.vy * dt;
+          if (item.type === 'rocket') {
+            const nearest = this.nearestEnemy(item.x, item.y, 90);
+            if (nearest) {
+              const desired = this.aimAtPlayer({ ...nearest, w: 0, h: 0 }, 60);
+              item.vy += (desired.vy - item.vy) * dt * 1.8;
+            }
+          }
+          break;
+
+        case 'bomb':
+          item.vy += 120 * dt;
+          item.x += item.vx * dt;
+          item.y += item.vy * dt;
+          if (item.y + item.h >= (item.x >= WORLD.seaEnd ? WORLD.landFloor : WORLD.seaFloor)) {
+            this.explodeBomb(item);
+          }
+          break;
+
+        case 'ship':
+          item.x += item.vx * dt;
+          item.y = 160 + Math.sin(this.elapsed * 1.7 + item.id) * 1.5;
+          if (item.x < WORLD.shipPatrolMin) item.x = WORLD.shipPatrolMax;
+          if (item.x > WORLD.shipResetX) item.x = WORLD.shipPatrolMin;
+          if (item.timer <= 0 && Math.abs(item.x - p.worldX) < 155) {
+            const aim = this.aimAtPlayer(item, 62 * this.skill.speed);
+            this.enemyProjectile('missile', item, aim.vx, aim.vy, {
+              w: 5, h: 3, ttl: 5, timer: 0
+            });
+            item.timer = randRange(this.rng, 2.8, 5.2) / d;
+          }
+          break;
+
+        case 'interceptor':
+          item.x += item.vx * dt;
+          item.y += Math.sin(this.elapsed * 2.2 + item.id) * 4 * dt;
+          if (item.x < leftEdge) {
+            item.x = rightEdge + randRange(this.rng, 0, 60);
+            item.y = randRange(this.rng, 34, 98);
+            item.hp = 1;
+          }
+          if (item.timer <= 0 && Math.abs(item.x - p.worldX) < 120) {
+            const aim = this.aimAtPlayer(item, 74 * this.skill.speed);
+            this.enemyProjectile('enemyBullet', item, aim.vx, aim.vy, { ttl: 2.8 });
+            item.timer = randRange(this.rng, 1.4, 3.0) / d;
+          }
+          break;
+
+        case 'missile': {
+          const dx = p.worldX - item.x;
+          const dy = p.y - item.y;
+          const dist = Math.max(1, Math.hypot(dx, dy));
+          const speed = 66 * this.skill.speed;
+          item.vx += ((dx / dist) * speed - item.vx) * dt * 0.9;
+          item.vy += ((dy / dist) * speed - item.vy) * dt * 0.9;
+          item.x += item.vx * dt;
+          item.y += item.vy * dt;
+          item.angle = Math.atan2(item.vy, item.vx);
+          break;
+        }
+
+        case 'enemyBullet':
+          item.x += item.vx * dt;
+          item.y += item.vy * dt;
+          break;
+
+        case 'flakShell':
+          item.x += item.vx * dt;
+          item.y += item.vy * dt;
+          item.vy += 34 * dt;
+          if (item.ttl <= 0 && !item.dead) {
+            item.dead = true;
+            this.add('explosion', item.x, item.y, {
+              w: 1, h: 1, ttl: 0.3, radius: 7, faction: 'neutral'
+            });
+          }
+          break;
+
+        case 'radar':
+        case 'depot':
+        case 'flak':
+          if (item.type === 'flak' && item.timer <= 0 && item.x >= this.cameraX && item.x <= this.cameraX + VIEW_W) {
+            this.enemyProjectile('flakShell', item,
+              randRange(this.rng, -22, 22), -randRange(this.rng, 52, 78) * this.skill.speed,
+              { w: 3, h: 3, ttl: 2.4 });
+            item.timer = randRange(this.rng, 1.6, 3.4) / d;
+          } else if (item.type === 'radar' && item.timer <= 0 && item.x >= this.cameraX && item.x <= this.cameraX + VIEW_W) {
+            const aim = this.aimAtPlayer(item, 60 * this.skill.speed);
+            this.enemyProjectile('enemyBullet', item, aim.vx, aim.vy, { ttl: 3 });
+            item.timer = randRange(this.rng, 2.0, 4.0) / d;
+          }
+          break;
+
+        case 'explosion':
+          break;
+
+        default:
+          break;
+      }
+    }
+  }
+
+  nearestEnemy(x, y, maxDistance = Infinity) {
+    let best = null;
+    let bestDistance = maxDistance;
+    for (const item of this.entities) {
+      if (item.dead || item.faction !== 'enemy') continue;
+      const distance = Math.hypot(item.x - x, item.y - y);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = item;
+      }
+    }
+    return best;
+  }
+
+  resolveCollisions() {
+    const p = this.player;
+    const playerBox = { x: p.worldX, y: p.y, w: p.w, h: p.h };
+    const playerBullets = this.entities.filter((item) =>
+      !item.dead && item.faction === 'player' && ['bullet', 'rocket'].includes(item.type));
+
+    for (const shot of playerBullets) {
+      for (const target of this.entities) {
+        if (target.dead || target.faction !== 'enemy') continue;
+        if (!aabb(shot, target)) continue;
+        this.damage(target, shot.type === 'rocket' ? 3 : 1);
+        shot.dead = true;
+        break;
+      }
+    }
+
+    if (p.invuln > 0 || this.state !== STATES.PLAY) return;
+    for (const item of this.entities) {
+      if (item.dead || item.faction !== 'enemy') continue;
+      if (!aabb(playerBox, item)) continue;
+      this.hitPlayer();
+      break;
+    }
+  }
+
+  hitPlayer() {
+    this.shake = 0.4;
+    this.flash = 0.5;
+    this.emit('hit');
+    this.loseLife('HIT');
+  }
+
+  crash(reason) {
+    if (this.state !== STATES.PLAY) return;
+    this.emit('explosion');
+    this.loseLife(reason);
+  }
+
+  loseLife(reason) {
+    if (this.state !== STATES.PLAY) return;
+    this.lives -= 1;
+    if (this.lives <= 0) {
+      this.endGame();
+      return;
+    }
+    const p = this.player;
+    // Remember the fatal spot before hiding the jet: respawn resumes this
+    // same sortie there instead of restarting at the carrier.
+    this.lastAlive = { worldX: p.worldX, y: p.y, vx: p.vx, vy: p.vy };
+    p.alive = false;
+    this.respawnTimer = RESPAWN.pauseSeconds;
+    this.setMessage(`${reason} - ${this.lives} LEFT`, 2.4);
+  }
+
+  respawn() {
+    const spot = this.lastAlive ?? { worldX: 18, y: 146, vx: 0, vy: 0 };
+    this.lastAlive = null;
+    const floor = spot.worldX >= WORLD.seaEnd ? WORLD.landFloor : WORLD.seaFloor;
+    // A terrain or deck impact happens at the floor, so lift the jet enough
+    // for the first blink tick to be safely airborne.
+    const y = clamp(Math.min(spot.y, floor - PLAYER.h - RESPAWN.clearance), 18, floor - PLAYER.h);
+    const p = this.makePlayer();
+    p.worldX = spot.worldX;
+    p.y = y;
+    p.invuln = RESPAWN.blinkSeconds;
+    this.player = p;
+    this.cameraX = clamp(p.worldX - 86, 0, WORLD.width - VIEW_W);
+    p.x = p.worldX - this.cameraX;
+    if (this.fuel < RESPAWN.fuelRestore) this.fuel = RESPAWN.fuelRestore;
+    if (this.phase === PHASES.LANDING) this.landingTime = 0;
+    this.emit('respawn');
+  }
+
+  completeSortie() {
+    const bonus = landingBonus(this.fuel, this.skill.multiplier);
+    this.score += bonus;
+    this.emit('landing');
+    const completedSortie = this.sortie;
+    const completedTime = this.missionTime;
+    this.sortie += 1;
+    if (this.testMode && completedSortie === 1 && !this.testResult) {
+      this.testResult = {
+        pass: true,
+        lives: this.lives,
+        ticks: this.testTicks,
+        seconds: Math.round(completedTime * 10) / 10,
+        score: this.score
+      };
+      this.state = STATES.TEST_RESULT;
+      this.emit('testpass');
+      return;
+    }
+    if (this.sortie % 3 === 0 && this.lives < PLAYER.maxLives) this.lives += 1;
+    this.resetMission();
+    this.setMessage(`PERFECT LANDING +${bonus}`, 3);
+  }
+
+  updatePhase(dt) {
+    const p = this.player;
+    switch (this.phase) {
+      case PHASES.TAKEOFF:
+        if (p.worldX > 58 && p.y < 132) {
+          this.phase = PHASES.SEA;
+          this.setMessage('SEA PHASE - ENGAGE', 2);
+        }
+        break;
+      case PHASES.SEA:
+        if (p.worldX >= WORLD.seaEnd) {
+          this.phase = PHASES.COAST;
+          this.setMessage('COAST - BOMB TARGETS', 2.4);
+        }
+        break;
+      case PHASES.COAST:
+        if (p.worldX >= WORLD.coastEnd) {
+          this.phase = PHASES.RETURN;
+          this.turnTimer = FEEDBACK.turnSeconds;
+          this.setMessage('RETURN TO CARRIER', 2.6);
+          this.emit('turn');
+        }
+        break;
+      case PHASES.RETURN:
+        if (p.worldX <= 46) {
+          this.phase = PHASES.LANDING;
+          this.landingTime = 0;
+          this.setMessage('LAND ON DECK', 3);
+        }
+        break;
+      case PHASES.LANDING: {
+        this.landingTime += dt;
+        const aligned = p.worldX >= 8 && p.worldX <= 38;
+        const onDeck = p.y >= 132 && p.y <= 150;
+        const gentle = Math.abs(p.vy) < 18;
+        if (aligned && onDeck && gentle) {
+          this.completeSortie();
+        } else if (p.worldX < 4 || p.y + p.h >= WORLD.seaFloor || this.landingTime > 8) {
+          // Without an approach timeout a missed landing left the player
+          // flying over land forever in a phase that disabled floor collisions.
+          this.crash('DECK MISS');
+        }
+        break;
+      }
+      default:
+        this.phase = PHASES.TAKEOFF;
+    }
+  }
+
+  endGame() {
+    if (this.testMode) {
+      this.testResult = {
+        pass: false,
+        lives: this.lives,
+        ticks: this.testTicks,
+        seconds: Math.round(this.missionTime * 10) / 10,
+        score: this.score
+      };
+      this.state = STATES.TEST_RESULT;
+      this.emit('testfail');
+      return;
+    }
+    this.state = STATES.GAME_OVER;
+    this.pendingScore = this.score;
+    this.qualifies = qualifies(this.score, this.highScores);
+    this.emit('gameover');
+  }
+
+  debugSnapshot() {
+    return {
+      state: this.state,
+      phase: this.phase,
+      skill: this.skill.name,
+      sortie: this.sortie,
+      score: this.score,
+      lives: this.lives,
+      fuel: Math.round(this.fuel * 10) / 10,
+      bombs: this.bombs,
+      rockets: this.rockets,
+      respawnTimer: Math.round(this.respawnTimer * 100) / 100,
+      ammoWarning: Math.round(this.ammoWarning * 100) / 100,
+      ammoWarningLevel: this.ammoWarningLevel,
+      ammoWarningText: this.ammoWarningText,
+      dryFireTimer: Math.round(this.dryFireTimer * 100) / 100,
+      dryFireText: this.dryFireText,
+      turnTimer: Math.round(this.turnTimer * 100) / 100,
+      testMode: this.testMode,
+      testResult: this.testResult ? { ...this.testResult } : null,
+      player: {
+        x: Math.round(this.player.worldX),
+        y: Math.round(this.player.y),
+        vx: Math.round(this.player.vx),
+        vy: Math.round(this.player.vy),
+        alive: this.player.alive,
+        invuln: Math.round(this.player.invuln * 100) / 100
+      },
+      cameraX: Math.round(this.cameraX),
+      entities: this.entities.length,
+      highScores: this.highScores.length
+    };
+  }
+}
+
+// ---- src/autopilot.js ----
+// Deterministic verification pilot. It emits ordinary actions only; it never
+// edits game state, so a test flight exercises exactly the same simulation as
+// a human player. In v0.9 it also obeys finite ammunition limits, selects real
+// targets and fires only when a lead solution predicts a hit.
+
+const PROJECTILES = new Set(['bullet', 'rocket', 'enemyBullet', 'missile', 'flakShell']);
+const AIR_TARGETS = new Set(['interceptor', 'missile', 'ship']);
+const GROUND_TARGETS = new Set(['radar', 'depot', 'flak']);
+const ENEMY_BODIES = new Set(['interceptor', 'ship', 'flak', 'radar', 'depot']);
+const TARGET_TYPES = new Set([...AIR_TARGETS, ...GROUND_TARGETS]);
+const CHOICES = Object.freeze(['up', 'hold', 'down']);
+const FLAK_GRAVITY = 34;
+const BOMB_GRAVITY = 120;
+
+// Muzzle geometry mirrors Game.fireCannon()/fireRocket()/dropBomb().
+const STRAIGHT_WEAPONS = Object.freeze({
+  cannon: { speed: 190, ttl: 1.4, offsetX: PLAYER.w, offsetY: 3, w: 4, h: 2, vyFactor: 0 },
+  rocket: { speed: 140, ttl: 2.2, offsetX: PLAYER.w, offsetY: 1, w: 6, h: 3, vyFactor: 0.3 }
+});
+
+const TARGET_VALUE = Object.freeze({
+  missile: 140, interceptor: 110, flak: 100, radar: 90, depot: 80, ship: 65
+});
+
+function center(target) {
+  return { x: target.x + target.w / 2, y: target.y + target.h / 2 };
+}
+
+function floorFor(x) {
+  return x >= WORLD.seaEnd ? WORLD.landFloor : WORLD.seaFloor;
+}
+
+function predictedY(player, choice, t, floor) {
+  const acceleration = choice === 'up' ? -PLAYER.accel : choice === 'down' ? PLAYER.accel : 0;
+  const vy = clamp(player.vy + acceleration * t, -PLAYER.maxVy, PLAYER.maxVy);
+  return clamp(player.y + (player.vy + vy) * 0.5 * t, 18, floor - player.h);
+}
+
+function predictedX(player, horizontal, t) {
+  const acceleration = horizontal === 'left' ? -PLAYER.accel
+    : horizontal === 'right' ? PLAYER.accel : 0;
+  const vx = clamp(player.vx + acceleration * t, -PLAYER.maxVx, PLAYER.maxVx);
+  return player.worldX + (player.vx + vx) * 0.5 * t;
+}
+
+function predictedThreat(item, player, game, t) {
+  let x = item.x + item.vx * t;
+  let y = item.y + item.vy * t;
+  if (item.type === 'flakShell') {
+    y += 0.5 * FLAK_GRAVITY * t * t;
+  } else if (item.type === 'missile' && item.vy !== 0) {
+    // Missiles steer continuously; approximate the same turn rate used by the
+    // simulation so a late dodge is not mistaken for a safe gap.
+    const dx = player.worldX - item.x;
+    const dy = player.y - item.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const desiredVy = (dy / distance) * 66 * game.skill.speed;
+    y += 0.5 * (desiredVy - item.vy) * 0.9 * t * t;
+  }
+  return { x, y };
+}
+
+function relevantThreats(game) {
+  const player = game.player;
+  const threats = [];
+  for (const item of game.entities) {
+    if (item.dead || item.faction === 'player') continue;
+    const projectile = PROJECTILES.has(item.type);
+    if (!projectile && !ENEMY_BODIES.has(item.type)) continue;
+    const dx = item.x - player.worldX;
+    if (dx < -120 || dx > 170) continue;
+    threats.push({ item, limit: projectile ? TEST_FLIGHT.threatDistance : TEST_FLIGHT.bodyDistance });
+  }
+  return threats;
+}
+
+/** Return a first-order intercept for a straight-flying shot, or null. */
+function straightSolution(player, target, kind = 'cannon') {
+  const weapon = STRAIGHT_WEAPONS[kind];
+  if (!weapon) return null;
+  const shot = center({ x: player.worldX + weapon.offsetX, y: player.y + weapon.offsetY, w: weapon.w, h: weapon.h });
+  const aim = center(target);
+  const closing = weapon.speed - (target.vx || 0);
+  if (closing <= 20) return null;
+  const t = (aim.x - shot.x) / closing;
+  if (t < 0.05 || t > weapon.ttl) return null;
+  const aimY = aim.y + (target.vy || 0) * t;
+  const shotY = shot.y + player.vy * weapon.vyFactor * t;
+  const error = aimY - shotY;
+  const tolerance = target.h / 2 + weapon.h / 2 +
+    (kind === 'rocket' ? TEST_FLIGHT.rocketTolerance : TEST_FLIGHT.cannonTolerance);
+  if (Math.abs(error) > tolerance) return null;
+  return { kind, t, error, aimY, releaseX: aim.x };
+}
+
+/** Predict where a ballistic bomb must be released to land inside a target. */
+function bombSolution(player, target) {
+  if (!GROUND_TARGETS.has(target.type)) return null;
+  const startX = player.worldX + 5 + 1.5;
+  const startY = player.y + PLAYER.h + 2;
+  const vx = player.vx * 0.45;
+  const vy = Math.max(12, player.vy);
+  const impactY = WORLD.landFloor - 2;
+  const discriminant = vy * vy - 2 * BOMB_GRAVITY * (startY - impactY);
+  if (discriminant < 0) return null;
+  const t = (-vy + Math.sqrt(discriminant)) / BOMB_GRAVITY;
+  if (t < 0.12 || t > 3.2) return null;
+  const impactX = startX + vx * t;
+  const error = center(target).x - impactX;
+  if (Math.abs(error) > TEST_FLIGHT.bombRadius) return null;
+  return { kind: 'bomb', t, error, impactX, aimY: TEST_FLIGHT.bombAltitude };
+}
+
+/** Rank live enemies in front of the jet; pure data, no state mutation. */
+function selectTargets(game) {
+  const player = game.player;
+  const result = [];
+  for (const item of game.entities) {
+    if (item.dead || item.faction !== 'enemy' || !TARGET_TYPES.has(item.type)) continue;
+    const dx = item.x - player.worldX;
+    const dy = item.y - player.y;
+    if (dx < -12 || dx > TEST_FLIGHT.targetRange || Math.abs(dy) > 92) continue;
+    let score = TARGET_VALUE[item.type] ?? 20;
+    if (game.phase === PHASES.COAST && GROUND_TARGETS.has(item.type)) score += 70;
+    if (item.type === 'missile') score += 50;
+    score -= dx * 0.35 + Math.abs(dy) * 0.25;
+    result.push({ item, score });
+  }
+  result.sort((a, b) => b.score - a.score);
+  return result.map((entry) => entry.item);
+}
+
+function findShot(game, targets, cooldowns) {
+  for (const target of targets) {
+    if (game.phase === PHASES.COAST && game.bombs > 0 && cooldowns.bomb <= 0) {
+      const solution = bombSolution(game.player, target);
+      if (solution) return { target, solution };
+    }
+    if (game.rockets > TEST_FLIGHT.rocketReserve && cooldowns.rocket <= 0) {
+      const solution = straightSolution(game.player, target, 'rocket');
+      if (solution) return { target, solution };
+    }
+    if (cooldowns.cannon <= 0) {
+      const solution = straightSolution(game.player, target, 'cannon');
+      if (solution) return { target, solution };
+    }
+  }
+  return null;
+}
+
+function chooseHorizontal(game) {
+  const player = game.player;
+  if (game.phase === PHASES.TAKEOFF) return 'right';
+  if (game.phase === PHASES.RETURN) return player.worldX > 42 ? 'left' : 'hold';
+  if (game.phase === PHASES.LANDING) return 'hold';
+
+  // A nearby projectile needs the full forward vector; braking here would
+  // erase the separation the vertical evader just created.
+  for (const { item } of relevantThreats(game)) {
+    if (!PROJECTILES.has(item.type)) continue;
+    const predicted = predictedThreat(item, player, game, 0.3);
+    if (predicted.x - player.worldX > -10 && predicted.x - player.worldX < 36 &&
+        Math.abs(predicted.y - player.y) < 24) return 'right';
+  }
+
+  // Short deterministic brake pulses make the jet weave across the screen
+  // without giving up the cruising speed needed for the three-minute route.
+  const period = TEST_FLIGHT.weaveSeconds * 60;
+  const phase = (game.testTicks % period) / period;
+  if (phase >= TEST_FLIGHT.weaveCeiling && player.vx > 26) return 'left';
+  if (phase >= TEST_FLIGHT.weaveFloor) return 'hold';
+  return 'right';
+}
+
+function chooseVertical(game, targetY, horizontal) {
+  const player = game.player;
+  const threats = relevantThreats(game);
+  const floor = floorFor(player.worldX);
+  const samples = Math.max(2, Math.round(TEST_FLIGHT.lookaheadSeconds / TEST_FLIGHT.sampleSeconds));
+  let best = { choice: 'hold', score: -Infinity };
+
+  for (const choice of CHOICES) {
+    // PD-style target cost: steer toward a desired climb rate instead of the
+    // far-future position, which would stop short of the deck on final approach.
+    const endY = predictedY(player, choice, TEST_FLIGHT.lookaheadSeconds, floor);
+    const desiredVy = clamp((targetY - player.y) * 2.2,
+      -TEST_FLIGHT.maxCorrectionVy, TEST_FLIGHT.maxCorrectionVy);
+    const endVy = clamp(player.vy + (choice === 'up' ? -PLAYER.accel
+      : choice === 'down' ? PLAYER.accel : 0) * 0.12, -PLAYER.maxVy, PLAYER.maxVy);
+    const nearY = predictedY(player, choice, 0.2, floor);
+    const targetCost = Math.abs(endVy - desiredVy) +
+      Math.abs(nearY - targetY) * 2 +
+      Math.abs(endY - floor + player.h) * 0.02;
+    let danger = 0;
+    let closest = TEST_FLIGHT.threatDistance * 2;
+
+    for (let index = 1; index <= samples; index += 1) {
+      const t = TEST_FLIGHT.sampleSeconds * index;
+      const py = predictedY(player, choice, t, floor);
+      const px = predictedX(player, horizontal, t);
+      for (const { item, limit } of threats) {
+        const predicted = predictedThreat(item, player, game, t);
+        const distance = Math.hypot(predicted.x - px, predicted.y - py);
+        closest = Math.min(closest, distance);
+        if (distance < limit) danger += (limit - distance) ** 2;
+      }
+    }
+
+    const score = closest * 0.35 - danger - targetCost;
+    if (score > best.score) best = { choice, score };
+  }
+  return best.choice;
+}
+
+function verticalFromChoice(choice) {
+  return choice === 'up' ? { up: true } : choice === 'down' ? { down: true } : {};
+}
+
+/** Pure planning result used by both the game loop and the unit tests. */
+function autopilotPlan(game) {
+  const player = game.player;
+  const targets = game.phase === PHASES.RETURN || game.phase === PHASES.LANDING
+    ? [] : selectTargets(game);
+  const shot = game.phase === PHASES.RETURN || game.phase === PHASES.LANDING
+    ? null : findShot(game, targets, game.cooldowns);
+  const primary = shot?.target ?? targets[0] ?? null;
+  const floor = floorFor(player.worldX);
+
+  let targetY = game.phase === PHASES.TAKEOFF || game.phase === PHASES.SEA ||
+    game.phase === PHASES.COAST ? TEST_FLIGHT.cruiseY
+    : game.phase === PHASES.RETURN ? TEST_FLIGHT.returnY : TEST_FLIGHT.deckY;
+  if (game.phase === PHASES.SEA || game.phase === PHASES.COAST) {
+    targetY += Math.sin(game.testTicks * 0.014) * 6;
+  }
+  if (primary) {
+    if (GROUND_TARGETS.has(primary.type) && game.bombs > 0 &&
+        game.phase === PHASES.COAST) {
+      targetY = TEST_FLIGHT.bombAltitude;
+    } else {
+      targetY = shot?.solution.aimY ?? center(primary).y;
+    }
+  }
+  if (game.phase === PHASES.LANDING) targetY = TEST_FLIGHT.deckY;
+  targetY = clamp(targetY, 30, floor - player.h - 5);
+
+  const horizontal = chooseHorizontal(game);
+  const vertical = chooseVertical(game, targetY, horizontal);
+  const actions = verticalFromChoice(vertical);
+  if (horizontal === 'right') actions.right = true;
+  if (horizontal === 'left') actions.left = true;
+  if (shot?.solution.kind === 'cannon') actions.fire = true;
+  if (shot?.solution.kind === 'rocket') actions.rocket = true;
+  if (shot?.solution.kind === 'bomb') actions.bomb = true;
+  return { actions, target: primary, shot };
+}
+
+/** Convert the pure plan into the same action object a human input produces. */
+function autopilotActions(game) {
+  return autopilotPlan(game).actions;
+}
+
+// ---- src/render.js ----
+// Canvas renderer for the static homage. Reads game state only; it never mutates the simulation.
+// Terrain data comes from src/terrain.js and is deterministic in world coordinates.
+
+const FONT = '"Courier New", monospace';
+const HORIZON = 30;
+
+function wrap(value, max) {
+  return ((value % max) + max) % max;
+}
+
+function box(ctx, color, x, y, w, h) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+}
+
+function label(ctx, text, x, y, size = 7, color = PALETTE.white, align = 'left') {
+  ctx.font = `${size}px ${FONT}`;
+  ctx.textAlign = align;
+  ctx.fillStyle = color;
+  ctx.fillText(text, Math.round(x), Math.round(y));
+  ctx.textAlign = 'left';
+}
+
+function drawSky(ctx, game) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, HORIZON + 14);
+  gradient.addColorStop(0, PALETTE.skyTop);
+  gradient.addColorStop(0.62, PALETTE.skyMid);
+  gradient.addColorStop(1, PALETTE.cyan);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, VIEW_W, HORIZON + 14);
+
+  for (let i = 0; i < 26; i += 1) {
+    const x = wrap(i * 37 - game.cameraX * 0.02, VIEW_W);
+    const y = 2 + ((i * 13) % 15);
+    ctx.globalAlpha = 0.12 + hashUnit(i, 5) * 0.28;
+    box(ctx, PALETTE.white, x, y, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  const sunX = 204 - (game.cameraX * 0.012) % 300;
+  ctx.globalAlpha = 0.10;
+  box(ctx, PALETTE.yellow, sunX - 13, 5, 26, 26);
+  ctx.globalAlpha = 0.20;
+  box(ctx, PALETTE.yellow, sunX - 9, 9, 18, 18);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = PALETTE.yellow;
+  ctx.beginPath();
+  ctx.arc(sunX, 18, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = PALETTE.white;
+  ctx.beginPath();
+  ctx.arc(sunX - 1, 17, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  const cloudX = game.cameraX * 0.18;
+  for (const cloud of skyClouds(cloudX - 60, cloudX + VIEW_W + 60)) {
+    const x = cloud.x - cloudX + Math.sin(game.elapsed * 0.25 + cloud.y) * 2;
+    ctx.globalAlpha = cloud.alpha;
+    box(ctx, PALETTE.white, x, cloud.y, cloud.width, 2);
+    box(ctx, PALETTE.white, x + 3, cloud.y - 1, cloud.width - 7, 1);
+    box(ctx, PALETTE.white, x + 5, cloud.y + 2, cloud.width - 10, 1);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawIslands(ctx, game) {
+  if (game.cameraX >= WORLD.seaEnd) return;
+  const shift = game.cameraX * 0.12;
+  for (const island of seaIslands(shift - 80, shift + VIEW_W + 80)) {
+    const x = island.x - shift;
+    if (x + island.width < -4 || x > VIEW_W + 4) continue;
+    ctx.fillStyle = PALETTE.skyMid;
+    ctx.beginPath();
+    ctx.moveTo(x, HORIZON + 1);
+    ctx.lineTo(x + island.width * 0.35, HORIZON - island.height);
+    ctx.lineTo(x + island.width * 0.62, HORIZON - island.height - 1);
+    ctx.lineTo(x + island.width, HORIZON + 1);
+    ctx.closePath();
+    ctx.fill();
+    box(ctx, PALETTE.cyan, x + island.width * 0.34, HORIZON - island.height, 3, 1);
+  }
+}
+
+function drawSea(ctx, game) {
+  const gradient = ctx.createLinearGradient(0, HORIZON, 0, VIEW_H);
+  gradient.addColorStop(0, PALETTE.skyMid);
+  gradient.addColorStop(0.14, PALETTE.seaLight);
+  gradient.addColorStop(0.55, PALETTE.seaMid);
+  gradient.addColorStop(1, PALETTE.seaDeep);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, HORIZON, VIEW_W, VIEW_H - HORIZON);
+
+  box(ctx, 'rgba(185, 244, 255, 0.20)', 0, HORIZON, VIEW_W, 1);
+  for (let x = 0; x < VIEW_W; x += 4) {
+    const y = HORIZON + 2 + Math.round(Math.sin(game.elapsed * 2 + x * 0.19) * 1);
+    box(ctx, 'rgba(185, 244, 255, 0.12)', x, y, 2, 1);
+  }
+
+  drawIslands(ctx, game);
+
+  for (const layer of waveLayers()) {
+    const drift = game.cameraX * (0.30 + layer.speed * 0.012);
+    const span = VIEW_W + layer.gap * 2;
+    for (let x = -layer.gap; x < VIEW_W + layer.gap; x += layer.gap) {
+      const wobble = Math.sin(game.elapsed * (0.8 + layer.speed * 0.05) + x * 0.07) * 2;
+      const px = wrap(x - drift + wobble, span) - layer.gap;
+      const py = layer.y + Math.round(Math.sin(game.elapsed + x * 0.05) * 1);
+      box(ctx, `rgba(185, 244, 255, ${layer.alpha})`, px, py, layer.length, 1);
+      if (layer.speed > 12) {
+        box(ctx, 'rgba(0, 14, 82, 0.35)', px + 1, py + 1, layer.length - 2, 1);
+      }
+    }
+  }
+}
+
+function drawSeaFeatures(ctx, game) {
+  if (game.cameraX >= WORLD.seaEnd) return;
+  for (const item of seaFeatures(game.cameraX - 20, game.cameraX + VIEW_W + 20)) {
+    const bob = Math.round(Math.sin(game.elapsed * 2.4 + item.x) * 1);
+    drawSprite(ctx, 'buoy', item.x - 2, item.y - 6 + bob, { alpha: 0.85 });
+    box(ctx, 'rgba(185, 244, 255, 0.30)', item.x - 6 + bob, item.y + 1, 13, 1);
+  }
+}
+
+function drawCoast(ctx, game) {
+  const start = Math.max(WORLD.seaEnd, Math.floor(game.cameraX / 2) * 2 - 4);
+  const end = Math.min(WORLD.width, game.cameraX + VIEW_W + 8);
+  if (start >= end) return;
+
+  ctx.fillStyle = PALETTE.grassDark;
+  ctx.beginPath();
+  ctx.moveTo(start, VIEW_H);
+  for (let x = start; x <= end; x += 3) {
+    ctx.lineTo(x, surfaceY(x) - duneHeight(x));
+  }
+  ctx.lineTo(end, VIEW_H);
+  ctx.closePath();
+  ctx.fill();
+
+  for (let x = start; x <= end; x += 2) {
+    const y = surfaceY(x);
+    box(ctx, PALETTE.grass, x, y + 3, 2, VIEW_H - y);
+    if (hashUnit(x, 307) > 0.72) {
+      box(ctx, PALETTE.grassDark, x, y + 5 + Math.floor(hashUnit(x, 311) * 9), 2, 3);
+    }
+    box(ctx, PALETTE.sand, x, y, 2, 4);
+    if (hashUnit(x, 313) > 0.5) box(ctx, PALETTE.sandDark, x, y + 3, 2, 1);
+    if (hashUnit(x, 331) > 0.86) {
+      box(ctx, PALETTE.steelDark, x + 1, y + 7 + Math.floor(hashUnit(x, 337) * 12), 1, 1);
+    }
+    if (hashUnit(x, 347) > 0.8) box(ctx, PALETTE.grassDark, x + 1, y + 4, 1, 2);
+    if (x < WORLD.seaEnd + 9) {
+      const foam = Math.floor((Math.sin(game.elapsed * 3 + x * 0.4) + 1) * 1.5);
+      box(ctx, 'rgba(185, 244, 255, 0.55)', x - foam, y - 1, 2 + foam, 2);
+    }
+  }
+
+  // The coast road is a real strip now, so the traffic has something to drive on.
+  for (let x = start; x <= end; x += 2) {
+    const roadY = surfaceY(x);
+    box(ctx, 'rgba(12, 18, 22, 0.90)', x, roadY - 1, 2, 5);
+    box(ctx, 'rgba(132, 150, 162, 0.45)', x, roadY - 1, 2, 1);
+    if (Math.floor(x / 10) % 2 === 0) box(ctx, PALETTE.sand, x, roadY + 1, 2, 1);
+  }
+
+  // Buildings stand behind the small decorations but in front of the road edge.
+  for (const building of landBuildings(start - CELL_PAD, end + CELL_PAD)) {
+    if (building.x < start - 20 || building.x > end + 20) continue;
+    const width = spriteWidth(building.type);
+    const height = spriteHeight(building.type);
+    box(ctx, 'rgba(0, 0, 0, 0.34)', building.x - width / 2, building.y - 1, width + 2, 2);
+    drawSprite(ctx, building.type, building.x - width / 2, building.y - height + 1,
+      { flip: building.flip });
+    if (building.lit) {
+      box(ctx, 'rgba(255, 140, 26, 0.18)', building.x - 3, building.y - height + 6, 6, 2);
+    }
+  }
+
+  for (const feature of landFeatures(start - CELL_PAD, end + CELL_PAD)) {
+    if (feature.x < start - 10 || feature.x > end + 10) continue;
+    const y = feature.y;
+    const width = spriteWidth(feature.type);
+    const height = spriteHeight(feature.type);
+    // Trees cast a wider shadow than the original tuft/rock patches.
+    const shadowWidth = feature.type === 'hangar' ? 16
+      : feature.type === 'oak' ? 12 : feature.type === 'pine' ? 8
+        : feature.type === 'palm' ? 10 : Math.min(16, Math.max(6, width));
+    box(ctx, 'rgba(0, 0, 0, 0.28)', feature.x - shadowWidth / 2, y, shadowWidth, 1);
+    drawSprite(ctx, feature.type, feature.x - width / 2, y - height + 1,
+      { flip: feature.variant > 0.5 });
+    box(ctx, 'rgba(201, 162, 39, 0.25)', feature.x + 2, y + 1, 2, 1);
+  }
+
+  for (const vehicle of roadVehicles(start - CELL_PAD, end + CELL_PAD, game.elapsed)) {
+    if (vehicle.x < start - 20 || vehicle.x > end + 20) continue;
+    const width = spriteWidth(vehicle.type);
+    drawSprite(ctx, vehicle.type, vehicle.x - width / 2, vehicle.y - 5,
+      { flip: vehicle.direction < 0, alpha: 0.95 });
+  }
+}
+
+const CELL_PAD = 64;
+
+function drawCarrier(ctx, game) {
+  for (let i = 0; i < 12; i += 1) {
+    const drift = (game.elapsed * 9 + i * 5) % 12;
+    ctx.globalAlpha = 0.35 - i * 0.02;
+    box(ctx, PALETTE.foam, -10 - i * 4 - drift, 164 + (i % 3), 5, 1);
+  }
+  ctx.globalAlpha = 1;
+
+  box(ctx, 'rgba(0, 0, 0, 0.35)', -10, 165, 66, 7);
+  ctx.fillStyle = PALETTE.hull;
+  ctx.beginPath();
+  ctx.moveTo(-10, 150);
+  ctx.lineTo(46, 150);
+  ctx.lineTo(42, 165);
+  ctx.lineTo(-5, 165);
+  ctx.closePath();
+  ctx.fill();
+
+  box(ctx, PALETTE.steelDark, -8, 147, 54, 4);
+  box(ctx, PALETTE.steel, -7, 147, 52, 1);
+  box(ctx, PALETTE.yellow, 7, 148, 28, 1);
+  for (let x = 3; x < 40; x += 6) box(ctx, PALETTE.white, x, 150, 3, 1);
+
+  box(ctx, PALETTE.steelDark, 40, 137, 6, 10);
+  box(ctx, PALETTE.steel, 41, 138, 4, 8);
+  box(ctx, PALETTE.white, 43, 135, 2, 3);
+  box(ctx, PALETTE.red, 43 + (Math.floor(game.elapsed * 3) % 2), 136, 1, 1);
+
+  label(ctx, 'HARRIER', 1, 161, 6, PALETTE.cyan);
+  box(ctx, PALETTE.foam, -2, 158 + Math.floor(Math.sin(game.elapsed * 4) * 1), 2, 1);
+  box(ctx, PALETTE.foam, 36, 158 + Math.floor(Math.cos(game.elapsed * 4) * 1), 2, 1);
+}
+
+function drawHealth(ctx, item) {
+  if (!item.hp || item.hp <= 1) return;
+  const width = item.hp * 3;
+  // Entities store their centre in x; sprites are drawn at x - width/2,
+  // so the pip strip must be centred the same way.
+  const x = item.x - width / 2;
+  box(ctx, 'rgba(0, 0, 0, 0.6)', x - 1, item.y - 14, width + 2, 3);
+  for (let i = 0; i < item.hp; i += 1) {
+    box(ctx, PALETTE.red, x + i * 3, item.y - 13, 2, 1);
+  }
+}
+
+function drawExplosion(ctx, item) {
+  const duration = Number.isFinite(item.duration) && item.duration > 0 ? item.duration : 0.55;
+  const t = 1 - Math.max(0, item.ttl) / duration;
+  const radius = Math.max(2, (item.radius ?? 8) * Math.min(1, t * 2.2));
+  ctx.globalAlpha = Math.max(0.1, 1 - t);
+  ctx.strokeStyle = PALETTE.yellow;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(item.x, item.y, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = PALETTE.red;
+  ctx.beginPath();
+  ctx.arc(item.x, item.y, radius * 0.72, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = PALETTE.yellow;
+  ctx.beginPath();
+  ctx.arc(item.x, item.y, radius * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  for (let i = 0; i < 8; i += 1) {
+    const angle = (i / 8) * Math.PI * 2 + hashUnit(item.id, i) * 0.5;
+    const distance = radius * (0.6 + hashUnit(item.id, i + 17) * 0.7);
+    box(ctx, i % 2 ? PALETTE.yellow : PALETTE.orange,
+      item.x + Math.cos(angle) * distance, item.y + Math.sin(angle) * distance, 2, 2);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawProjectile(ctx, item, game) {
+  switch (item.type) {
+    case 'bullet':
+      box(ctx, 'rgba(255, 255, 255, 0.35)', item.x - 6, item.y, 6, 2);
+      box(ctx, PALETTE.white, item.x, item.y, 5, 2);
+      box(ctx, PALETTE.yellow, item.x + 4, item.y, 2, 2);
+      break;
+    case 'rocket':
+      box(ctx, 'rgba(255, 140, 26, 0.45)', item.x - 8, item.y + 1, 8, 2);
+      box(ctx, PALETTE.white, item.x, item.y + 1, 6, 3);
+      box(ctx, PALETTE.yellow, item.x + 6, item.y, 2, 4);
+      box(ctx, game.elapsed % 0.1 < 0.05 ? PALETTE.orange : PALETTE.red,
+        item.x - 3, item.y + 1, 3, 3);
+      break;
+    case 'bomb': {
+      const ground = item.x >= WORLD.seaEnd ? WORLD.landFloor : WORLD.seaFloor;
+      ctx.globalAlpha = 0.30;
+      box(ctx, PALETTE.black, item.x - 2, ground, 6, 1);
+      ctx.globalAlpha = 1;
+      box(ctx, PALETTE.steel, item.x, item.y, 3, 5);
+      box(ctx, PALETTE.yellow, item.x + 1, item.y - 2, 1, 2);
+      break;
+    }
+    case 'missile':
+      ctx.save();
+      ctx.translate(item.x + item.w / 2, item.y + item.h / 2);
+      ctx.rotate(item.angle || 0);
+      box(ctx, PALETTE.orange, -10, -1, 5, 2);
+      box(ctx, PALETTE.red, -4, -2, 8, 4);
+      box(ctx, PALETTE.yellow, 3, -2, 3, 4);
+      box(ctx, game.elapsed % 0.08 < 0.04 ? PALETTE.white : PALETTE.yellow, -11, -1, 2, 2);
+      ctx.restore();
+      break;
+    case 'enemyBullet':
+      box(ctx, 'rgba(255, 30, 0, 0.4)', item.x - 4, item.y, 4, 2);
+      box(ctx, PALETTE.red, item.x, item.y, 4, 2);
+      break;
+    case 'flakShell':
+      box(ctx, Math.floor(game.elapsed * 16) % 2 ? PALETTE.white : PALETTE.red,
+        item.x - 1, item.y - 1, 5, 5);
+      break;
+    default:
+      break;
+  }
+}
+
+function drawEntities(ctx, game) {
+  for (const item of game.entities) {
+    if (item.dead) continue;
+    if (item.x < game.cameraX - 30 || item.x > game.cameraX + VIEW_W + 30) continue;
+
+    switch (item.type) {
+      case 'explosion':
+        drawExplosion(ctx, item);
+        break;
+      case 'ship':
+        ctx.globalAlpha = 0.30;
+        box(ctx, PALETTE.black, item.x - 8, 170, 20, 2);
+        ctx.globalAlpha = 1;
+        box(ctx, 'rgba(185, 244, 255, 0.45)', item.x - 18, item.y + 7, 10, 1);
+        drawSprite(ctx, 'ship', item.x - 11, item.y - 5);
+        drawHealth(ctx, item);
+        break;
+      case 'interceptor':
+        box(ctx, game.elapsed % 0.09 < 0.045 ? PALETTE.orange : PALETTE.yellow,
+          item.x + 12, item.y + 2, 3, 2);
+        drawSprite(ctx, 'interceptor', item.x - 8, item.y - 4, { flip: false });
+        break;
+      case 'radar': {
+        box(ctx, 'rgba(0, 0, 0, 0.35)', item.x - 9, item.y + 4, 18, 2);
+        drawSprite(ctx, 'radar', item.x - 7, item.y - 12);
+        const angle = game.elapsed * 2.6 + item.id;
+        ctx.globalAlpha = 0.55;
+        box(ctx, PALETTE.cyan, item.x - 1 + Math.cos(angle) * 4,
+          item.y - 5 + Math.sin(angle) * 2, 2, 1);
+        ctx.globalAlpha = 1;
+        drawHealth(ctx, item);
+        break;
+      }
+      case 'depot':
+        box(ctx, 'rgba(0, 0, 0, 0.35)', item.x - 11, item.y + 3, 22, 2);
+        drawSprite(ctx, 'depot', item.x - 9, item.y - 11);
+        drawHealth(ctx, item);
+        break;
+      case 'flak': {
+        box(ctx, 'rgba(0, 0, 0, 0.35)', item.x - 7, item.y + 3, 14, 2);
+        drawSprite(ctx, 'flak', item.x - 6, item.y - 10);
+        const dx = game.player.worldX - item.x;
+        const dy = game.player.y - item.y;
+        const angle = Math.atan2(dy, dx);
+        ctx.globalAlpha = 0.9;
+        box(ctx, PALETTE.steel, item.x + Math.cos(angle) * 3 - 1,
+          item.y - 5 + Math.sin(angle) * 3, 4, 2);
+        ctx.globalAlpha = 1;
+        drawHealth(ctx, item);
+        break;
+      }
+      default:
+        drawProjectile(ctx, item, game);
+        break;
+    }
+  }
+}
+
+function drawPlayer(ctx, game) {
+  const p = game.player;
+  if (!p.alive) return;
+  const altitude = Math.max(0, WORLD.seaFloor - p.y);
+  ctx.globalAlpha = Math.max(0.08, 0.35 - altitude / 500);
+  box(ctx, PALETTE.black, p.worldX - 9, Math.min(WORLD.seaFloor + 2, p.y + 26), 18, 2);
+  ctx.globalAlpha = 1;
+
+  const thrust = Math.max(0, -p.vy) / 58;
+  if (thrust > 0.1 || p.vx > 8) {
+    const flame = 3 + Math.floor(thrust * 7) + Math.floor(game.elapsed * 20) % 2;
+    box(ctx, PALETTE.orange, p.worldX - 12, p.y + 3, 5, flame);
+    box(ctx, PALETTE.yellow, p.worldX - 11, p.y + 4, 3, Math.max(1, flame - 2));
+    box(ctx, PALETTE.white, p.worldX - 10, p.y + 5, 1, Math.max(1, flame - 4));
+  }
+  if (p.vx > 20) {
+    for (let i = 1; i <= 3; i += 1) {
+      box(ctx, 'rgba(185, 244, 255, 0.25)', p.worldX - 12 - i * 4, p.y + 2 + i, 3, 1);
+    }
+  }
+
+  const blink = p.invuln > 0 && Math.floor(game.elapsed * 14) % 2 === 0;
+  // v0.8: entering RETURN flips the sprite over 0.9 s. The scale factor is a
+  // presentation-only 180-degree yaw; the simulation keeps its own heading.
+  const returning = game.phase === PHASES.RETURN || game.phase === PHASES.LANDING;
+  const progress = returning
+    ? Math.max(0, Math.min(1, 1 - game.turnTimer / FEEDBACK.turnSeconds))
+    : 0;
+  let facing = Math.cos(Math.PI * progress);
+  if (Math.abs(facing) < 0.12) facing = Math.sign(facing || 1) * 0.12;
+  const bank = Math.sin(Math.PI * progress) * 3;
+  ctx.save();
+  ctx.translate(p.worldX, p.y + bank);
+  ctx.scale(facing, 1);
+  drawSprite(ctx, 'harrier', -10, -6, { alpha: blink ? 0.35 : 1 });
+  ctx.restore();
+}
+
+function drawBar(ctx, x, y, width, ratio, color, segments = 0) {
+  box(ctx, 'rgba(0, 0, 0, 0.75)', x - 1, y - 1, width + 2, 6);
+  box(ctx, PALETTE.steelDark, x, y, width, 4);
+  const filled = Math.round((width - 2) * Math.max(0, Math.min(1, ratio)));
+  box(ctx, color, x + 1, y + 1, filled, 2);
+  if (segments > 0) {
+    for (let i = 1; i < segments; i += 1) {
+      box(ctx, 'rgba(0, 0, 0, 0.55)', x + Math.round((width * i) / segments), y, 1, 4);
+    }
+  }
+}
+
+function drawMinimap(ctx, game) {
+  const x0 = 12;
+  const width = VIEW_W - 24;
+  const y = 184;
+  const scale = width / WORLD.width;
+  box(ctx, 'rgba(0, 0, 0, 0.78)', x0 - 3, y - 8, width + 6, 16);
+  box(ctx, PALETTE.steelDark, x0, y - 3, width, 6);
+  box(ctx, 'rgba(10, 116, 200, 0.55)', x0, y - 3, Math.round(WORLD.seaEnd * scale), 6);
+  box(ctx, 'rgba(13, 107, 50, 0.75)', x0 + Math.round(WORLD.seaEnd * scale), y - 3,
+    Math.round((WORLD.coastEnd - WORLD.seaEnd) * scale), 6);
+  box(ctx, PALETTE.white, x0 + 1, y - 5, 2, 10);
+  box(ctx, PALETTE.yellow, x0 + Math.round(WORLD.seaEnd * scale), y - 5, 1, 10);
+  box(ctx, PALETTE.orange, x0 + Math.round(WORLD.coastEnd * scale), y - 5, 1, 10);
+  for (const item of game.entities) {
+    if (item.dead || item.faction !== 'enemy') continue;
+    if (!['ship', 'radar', 'depot', 'flak', 'interceptor'].includes(item.type)) continue;
+    const markX = Math.max(x0, Math.min(x0 + width - 2, x0 + Math.round(item.x * scale)));
+    box(ctx, PALETTE.red, markX, y - 1, 2, 2);
+  }
+  const px = Math.max(x0 + 3, Math.min(x0 + width - 3, x0 + Math.round(game.player.worldX * scale)));
+  ctx.fillStyle = PALETTE.cyan;
+  ctx.beginPath();
+  ctx.moveTo(px, y - 5);
+  ctx.lineTo(px + 3, y + 4);
+  ctx.lineTo(px - 3, y + 4);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawHud(ctx, game) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, 27);
+  gradient.addColorStop(0, 'rgba(2, 12, 22, 0.94)');
+  gradient.addColorStop(1, 'rgba(0, 22, 32, 0.80)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, VIEW_W, 27);
+  box(ctx, 'rgba(0, 183, 208, 0.55)', 0, 26, VIEW_W, 1);
+
+  ctx.font = `9px ${FONT}`;
+  ctx.fillStyle = PALETTE.black;
+  ctx.fillText(`SCORE ${formatScore(game.score)}`, 4, 11);
+  ctx.fillStyle = PALETTE.yellow;
+  ctx.fillText(`SCORE ${formatScore(game.score)}`, 3, 10);
+  label(ctx, `HI ${formatScore(game.highScore)}`, VIEW_W - 3, 10, 7, PALETTE.cyan, 'right');
+
+  drawBar(ctx, 20, 14, 26, Math.abs(game.player.vx) / 75, PALETTE.cyan, 4);
+  label(ctx, 'SPD', 3, 20, 6, PALETTE.white);
+  drawBar(ctx, 64, 14, 38, game.fuel / 100, game.fuel < 25 ? PALETTE.red : PALETTE.yellow, 5);
+  label(ctx, 'FUEL', 45, 20, 6, PALETTE.white);
+
+  const ammoColor = (count) => count === 0 ? PALETTE.steelDark
+    : count <= FEEDBACK.lowAmmoCount ? PALETTE.orange : PALETTE.white;
+  label(ctx, `R ${String(game.rockets).padStart(2, '0')}`, 107, 20, 7, ammoColor(game.rockets));
+  label(ctx, `B ${String(game.bombs).padStart(2, '0')}`, 134, 20, 7, ammoColor(game.bombs));
+  label(ctx, `L ${game.lives}`, 161, 20, 7, PALETTE.yellow);
+  label(ctx, `S${game.skillIndex + 1}`, 183, 20, 6, PALETTE.cyan);
+  label(ctx, `O${game.sortie}`, 204, 20, 6, PALETTE.orange);
+  label(ctx, game.phase.slice(0, 7), 253, 20, 6, PALETTE.foam, 'right');
+  if (game.testMode) label(ctx, 'AUTO', 220, 10, 6, PALETTE.green, 'right');
+
+  if (game.fuel < 25 && Math.floor(game.elapsed * 3) % 2 === 0) {
+    label(ctx, 'FUEL LOW', VIEW_W / 2, 38, 8, PALETTE.red, 'center');
+  }
+  if (game.ammoWarning > 0 && game.ammoWarningText &&
+      Math.floor(game.elapsed * 3) % 2 === 0) {
+    label(ctx, game.ammoWarningText, VIEW_W / 2, 50, 8, PALETTE.orange, 'center');
+  }
+  if (game.turnTimer > 0) {
+    label(ctx, '180 TURN', VIEW_W / 2, 58, 7, PALETTE.cyan, 'center');
+  }
+  if (game.dryFireTimer > 0 && game.dryFireText) {
+    label(ctx, game.dryFireText, VIEW_W / 2, 66, 7, PALETTE.red, 'center');
+  }
+  if (!game.player.alive && game.respawnTimer > 0) {
+    label(ctx, 'RESPAWNING', VIEW_W / 2, 74, 8, PALETTE.red, 'center');
+  }
+
+  if (game.messageTimer > 0 && game.message) {
+    const width = Math.min(VIEW_W - 12, game.message.length * 5 + 14);
+    const x = (VIEW_W - width) / 2;
+    box(ctx, 'rgba(0, 0, 0, 0.86)', x, 80, width, 15);
+    box(ctx, PALETTE.yellow, x, 80, width, 1);
+    box(ctx, PALETTE.yellow, x, 94, width, 1);
+    label(ctx, game.message, VIEW_W / 2, 91, 8, PALETTE.yellow, 'center');
+  }
+
+  drawMinimap(ctx, game);
+}
+
+function drawPanel(ctx) {
+  const gradient = ctx.createLinearGradient(0, 28, 0, VIEW_H - 28);
+  gradient.addColorStop(0, 'rgba(2, 18, 28, 0.92)');
+  gradient.addColorStop(1, 'rgba(0, 8, 16, 0.94)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(16, 28, VIEW_W - 32, VIEW_H - 56);
+  ctx.strokeStyle = PALETTE.yellow;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(16.5, 28.5, VIEW_W - 33, VIEW_H - 57);
+  ctx.strokeStyle = 'rgba(0, 183, 208, 0.45)';
+  ctx.strokeRect(19.5, 31.5, VIEW_W - 39, VIEW_H - 63);
+  for (const [cx, cy, sx, sy] of [[16, 28, 1, 1], [VIEW_W - 16, 28, -1, 1],
+    [16, VIEW_H - 28, 1, -1], [VIEW_W - 16, VIEW_H - 28, -1, -1]]) {
+    box(ctx, PALETTE.foam, cx + (sx > 0 ? 0 : -5), cy + (sy > 0 ? 0 : -1), 5, 1);
+    box(ctx, PALETTE.foam, cx + (sx > 0 ? 0 : -1), cy + (sy > 0 ? 0 : -5), 1, 5);
+  }
+}
+
+function centered(ctx, text, y, size = 8, color = PALETTE.yellow) {
+  label(ctx, text, VIEW_W / 2, y, size, color, 'center');
+}
+
+function drawOverlay(ctx, game) {
+  if (game.state === STATES.PLAY) return;
+  if (game.state === STATES.PAUSED) {
+    drawPanel(ctx);
+    centered(ctx, 'PAUSED', 82, 14, PALETTE.white);
+    box(ctx, PALETTE.cyan, 86, 90, 84, 1);
+    centered(ctx, 'P / ESC  RESUME', 108, 8, PALETTE.yellow);
+    centered(ctx, 'Q        QUIT TO TITLE', 122, 8, PALETTE.cyan);
+    return;
+  }
+
+  drawPanel(ctx);
+
+  switch (game.state) {
+    case STATES.TITLE:
+      drawSprite(ctx, 'harrier', 98, 40);
+      centered(ctx, 'HARRIER PATROL', 66, 15, PALETTE.yellow);
+      box(ctx, PALETTE.cyan, 58, 72, 140, 1);
+      centered(ctx, 'SINGLE FILE EDITION - V0.9', 84, 7, PALETTE.cyan);
+      centered(ctx, 'VTOL  /  SEA  /  COAST  /  LAND', 101, 7, PALETTE.white);
+      centered(ctx, 'PRESS ENTER TO FLY', 128, 9, PALETTE.foam);
+      centered(ctx, 'ARROWS MOVE  SPACE FIRE  J ROCKET  K BOMB', 146, 6, PALETTE.cyan);
+      centered(ctx, 'T  AUTO TEST FLIGHT', 158, 6, PALETTE.green);
+      break;
+
+    case STATES.SKILL_SELECT:
+      centered(ctx, 'SELECT SKILL', 50, 12, PALETTE.yellow);
+      box(ctx, PALETTE.cyan, 88, 56, 80, 1);
+      SKILLS.forEach((skill, index) => {
+        const selected = index === game.skillIndex;
+        const y = 72 + index * 14;
+        if (selected) box(ctx, 'rgba(0, 183, 208, 0.20)', 40, y - 9, 176, 12);
+        centered(ctx, `${selected ? '>' : ' '} ${index + 1}  ${skill.name}`, y,
+          8, selected ? PALETTE.foam : PALETTE.cyan);
+      });
+      centered(ctx, 'LEFT / RIGHT  SELECT', 150, 7, PALETTE.yellow);
+      centered(ctx, 'ENTER START     Q BACK', 162, 7, PALETTE.yellow);
+      break;
+
+    case STATES.GAME_OVER:
+      centered(ctx, 'MISSION FAILED', 62, 13, PALETTE.red);
+      box(ctx, PALETTE.red, 76, 70, 104, 1);
+      centered(ctx, `SCORE  ${formatScore(game.score)}`, 88, 9, PALETTE.yellow);
+      centered(ctx, `SORTIE ${game.sortie}   HITS ${game.kills}`, 104, 7, PALETTE.white);
+      centered(ctx, game.qualifies ? 'NEW HIGH SCORE!' : 'FLY AGAIN', 124, 8, PALETTE.cyan);
+      centered(ctx, 'ENTER  REGISTER NAME', 146, 7, PALETTE.yellow);
+      break;
+
+    case STATES.NAME_ENTRY:
+      centered(ctx, 'ENTER INITIALS', 64, 12, PALETTE.yellow);
+      box(ctx, PALETTE.cyan, 86, 72, 84, 1);
+      centered(ctx, `[${game.name[0] ?? '_'}] [${game.name[1] ?? '_'}] [${game.name[2] ?? '_'}]`,
+        96, 15, PALETTE.foam);
+      centered(ctx, 'A-Z 0-9  TYPE   BACKSPACE  ERASE', 126, 7, PALETTE.cyan);
+      centered(ctx, 'ENTER  CONFIRM', 142, 7, PALETTE.yellow);
+      break;
+
+    case STATES.TEST_RESULT: {
+      const result = game.testResult ?? { pass: false, lives: 0, ticks: 0, seconds: 0, score: 0 };
+      centered(ctx, result.pass ? 'AUTO TEST PASS' : 'AUTO TEST FAIL', 46, 14,
+        result.pass ? PALETTE.green : PALETTE.red);
+      box(ctx, result.pass ? PALETTE.green : PALETTE.red, 62, 56, 132, 1);
+      centered(ctx, `LIVES ${result.lives}   TIME ${result.seconds}s`, 78, 8, PALETTE.foam);
+      centered(ctx, `SCORE ${formatScore(result.score)}   TICKS ${result.ticks}`, 98, 7, PALETTE.yellow);
+      centered(ctx, 'ENTER  RETURN TO TITLE', 136, 7, PALETTE.cyan);
+      break;
+    }
+
+    case STATES.HIGH_SCORES:
+      centered(ctx, 'TOP PILOTS', 44, 12, PALETTE.yellow);
+      box(ctx, PALETTE.cyan, 88, 50, 80, 1);
+      game.highScores.slice(0, 8).forEach((entry, index) => {
+        const line = `${String(index + 1).padStart(2, '0')}  ${entry.name}  ${formatScore(entry.score)}  L${entry.level}`;
+        const y = 64 + index * 11;
+        if (index % 2 === 0) box(ctx, 'rgba(0, 183, 208, 0.10)', 34, y - 8, 188, 10);
+        centered(ctx, line, y, 7, index === 0 ? PALETTE.foam : PALETTE.cyan);
+      });
+      centered(ctx, 'ENTER  TITLE', 164, 7, PALETTE.yellow);
+      break;
+
+    default:
+      break;
+  }
+}
+
+function render(ctx, game) {
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.textBaseline = 'alphabetic';
+
+  drawSky(ctx, game);
+  drawSea(ctx, game);
+
+  const shakeX = game.shake > 0 ? (Math.random() - 0.5) * game.shake * 5 : 0;
+  const shakeY = game.shake > 0 ? (Math.random() - 0.5) * game.shake * 3 : 0;
+  ctx.save();
+  ctx.translate(-Math.round(game.cameraX) + Math.round(shakeX), Math.round(shakeY));
+  drawSeaFeatures(ctx, game);
+  drawCoast(ctx, game);
+  drawCarrier(ctx, game);
+  drawEntities(ctx, game);
+  drawPlayer(ctx, game);
+  ctx.restore();
+
+  drawHud(ctx, game);
+  drawOverlay(ctx, game);
+
+  if (game.flash > 0) {
+    ctx.fillStyle = `rgba(255, 30, 0, ${Math.min(0.45, game.flash * 0.5)})`;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  }
+  ctx.restore();
+}
+
+// ---- src/input.js ----
+// Keyboard, pointer, touch and gamepad input. Produces a per-frame action snapshot for Game.update().
+
+const KEY_ACTIONS = Object.freeze({
+  ArrowLeft: 'left', KeyA: 'left',
+  ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'up', KeyW: 'up',
+  ArrowDown: 'down', KeyS: 'down',
+  Space: 'fire',
+  KeyJ: 'rocket', KeyX: 'rocket',
+  KeyK: 'bomb', KeyC: 'bomb',
+  KeyP: 'pause', Escape: 'pause',
+  Enter: 'confirm', NumpadEnter: 'confirm',
+  Backspace: 'backspace',
+  KeyQ: 'back',
+  KeyM: 'mute',
+  KeyT: 'test'
+});
+
+const BLOCKED_KEYS = new Set([...Object.keys(KEY_ACTIONS), 'Tab']);
+// Ordered so a simultaneous D-pad press types W-A-S-D in the intuitive order.
+const PAD_CHARS = Object.freeze([
+  [12, 'W'], [14, 'A'], [13, 'S'], [15, 'D'],
+  [4, 'J'], [5, 'K'], [0, 'A'], [1, 'B'], [2, 'X'], [3, 'Y']
+]);
+const AXIS_DEADZONE = 0.35;
+
+class Input {
+  constructor(target = globalThis, root = globalThis.document, options = {}) {
+    this.target = target;
+    this.root = root;
+    this.actions = Object.create(null);
+    this.prev = Object.create(null);
+    this.pressed = Object.create(null);
+    this.typed = '';
+    this.textMode = false;
+    this.onFirstGesture = () => {};
+    this.gestureDone = false;
+
+    // Gamepad support is injectable so the pure input tests can supply a fake pad.
+    this.getGamepads = options.getGamepads ?? (() => globalThis.navigator?.getGamepads?.() ?? []);
+    this.padActions = Object.create(null);
+    this.padEdges = Object.create(null);
+    this.keyCodes = Object.create(null);
+    this.gamepadConnected = false;
+    this.gameState = 'TITLE';
+
+    // Text mode is active on the initials screen: letters are characters,
+    // not flight controls. Only Enter and Backspace keep their game actions.
+    this.setTextMode = (enabled) => {
+      const next = Boolean(enabled);
+      if (next === this.textMode) return;
+      this.textMode = next;
+      this.padEdges = Object.create(null);
+      this.padActions = Object.create(null);
+      if (next) {
+        this.actions = Object.create(null);
+        this.prev = Object.create(null);
+      }
+    };
+
+    this.setGameState = (state) => {
+      this.gameState = String(state ?? 'TITLE');
+    };
+
+    this.handleKeyDown = (event) => {
+      // Holding a letter must not auto-repeat into all three initials.
+      if (event.repeat) {
+        event.preventDefault?.();
+        return;
+      }
+      this.gesture();
+      const action = KEY_ACTIONS[event.code];
+      const isChar = typeof event.key === 'string' && /^[a-z0-9]$/i.test(event.key);
+      if (this.textMode) {
+        if (action === 'confirm' || action === 'backspace') {
+          event.preventDefault();
+          if (!this.actions[action]) this.pressed[action] = true;
+          this.actions[action] = true;
+          this.keyCodes[event.code] = action;
+        } else if (isChar) {
+          event.preventDefault();
+          this.typed += event.key.toUpperCase();
+        } else if (BLOCKED_KEYS.has(event.code)) {
+          event.preventDefault();
+        }
+        return;
+      }
+      if (action) {
+        event.preventDefault();
+        if (!this.actions[action]) this.pressed[action] = true;
+        this.actions[action] = true;
+        this.keyCodes[event.code] = action;
+      } else if (isChar) {
+        this.typed += event.key.toUpperCase();
+      }
+      if (BLOCKED_KEYS.has(event.code)) event.preventDefault();
+    };
+
+    this.handleKeyUp = (event) => {
+      const action = KEY_ACTIONS[event.code];
+      if (!action) return;
+      event.preventDefault();
+      delete this.keyCodes[event.code];
+      const stillHeld = Object.values(this.keyCodes).some((mapped) => mapped === action);
+      if (!stillHeld) this.actions[action] = false;
+    };
+
+    this.handleBlur = () => {
+      this.actions = Object.create(null);
+      this.prev = Object.create(null);
+      this.keyCodes = Object.create(null);
+      this.padEdges = Object.create(null);
+      this.padActions = Object.create(null);
+    };
+
+    this.handleGamepadConnected = () => {
+      this.gamepadConnected = true;
+      this.gesture();
+    };
+
+    this.handleGamepadDisconnected = () => {
+      this.gamepadConnected = false;
+      this.padActions = Object.create(null);
+      this.padEdges = Object.create(null);
+    };
+
+    target.addEventListener?.('keydown', this.handleKeyDown);
+    target.addEventListener?.('keyup', this.handleKeyUp);
+    target.addEventListener?.('blur', this.handleBlur);
+    target.addEventListener?.('gamepadconnected', this.handleGamepadConnected);
+    target.addEventListener?.('gamepaddisconnected', this.handleGamepadDisconnected);
+    this.bindPointerButtons();
+  }
+
+  gesture() {
+    if (this.gestureDone) return;
+    this.gestureDone = true;
+    this.onFirstGesture();
+  }
+
+  bindPointerButtons() {
+    const buttons = this.root?.querySelectorAll?.('[data-action]') ?? [];
+    for (const button of buttons) {
+      const action = button.dataset.action;
+      if (!action) continue;
+      button.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        this.gesture();
+        if (!this.actions[action]) this.pressed[action] = true;
+        this.actions[action] = true;
+        button.setPointerCapture?.(event.pointerId);
+      });
+      const release = (event) => {
+        event.preventDefault();
+        this.actions[action] = false;
+      };
+      button.addEventListener('pointerup', release);
+      button.addEventListener('pointercancel', release);
+      button.addEventListener('lostpointercapture', release);
+    }
+  }
+
+  // Standard mapping: left stick/D-pad move, A fire/confirm, X rocket,
+  // B bomb/back, LB/RB duplicate rocket/bomb, Start pause/confirm, Select mute/backspace.
+  // On the initials screen face buttons and bumpers type a useful subset of letters.
+  pollGamepad() {
+    const pads = Array.from(this.getGamepads() ?? []);
+    const pad = pads.find((item) => item && item.connected !== false);
+    if (!pad) {
+      this.gamepadConnected = false;
+      this.padActions = Object.create(null);
+      this.padEdges = Object.create(null);
+      return;
+    }
+    this.gamepadConnected = true;
+    const buttons = pad.buttons ?? [];
+    const axes = pad.axes ?? [];
+    const down = (index) => Boolean(buttons[index]?.pressed ?? (buttons[index] > 0.5));
+    const direction = (value) => (Math.abs(value) > AXIS_DEADZONE ? Math.sign(value) : 0);
+    const next = Object.create(null);
+    const chars = Object.create(null);
+
+    if (this.textMode) {
+      for (const [index, char] of PAD_CHARS) {
+        if (down(index)) chars[char] = true;
+      }
+      if (down(9)) next.confirm = true;
+      if (down(8)) next.backspace = true;
+    } else {
+      const dx = direction(axes[0]) || (down(14) ? -1 : 0) || (down(15) ? 1 : 0);
+      const dy = direction(axes[1]) || (down(12) ? -1 : 0) || (down(13) ? 1 : 0);
+      if (dx < 0) next.left = true;
+      if (dx > 0) next.right = true;
+      if (dy < 0) next.up = true;
+      if (dy > 0) next.down = true;
+      if (this.gameState === 'PLAY') {
+        if (down(0)) next.fire = true;
+        if (down(2) || down(5)) next.rocket = true;
+        if (down(1) || down(4)) next.bomb = true;
+        if (down(9)) next.pause = true;
+        if (down(8)) next.mute = true;
+      } else {
+        if (down(0) || down(9)) next.confirm = true;
+        if (down(1) || down(8)) next.back = true;
+      }
+    }
+
+    for (const action of Object.keys(next)) {
+      if (next[action] && !this.padEdges[action]) this.pressed[action] = true;
+      this.padEdges[action] = Boolean(next[action]);
+    }
+    // Recompute every non-character edge from the current poll: a released
+    // button must return to false even when its action is absent from `next`.
+    for (const action of Object.keys(this.padEdges)) {
+      if (!action.startsWith('char:')) this.padEdges[action] = Boolean(next[action]);
+    }
+    for (const char of Object.keys(chars)) {
+      const key = `char:${char}`;
+      if (!this.padEdges[key]) this.typed += char;
+      this.padEdges[key] = true;
+    }
+    for (const key of Object.keys(this.padEdges)) {
+      if (key.startsWith('char:') && !chars[key.slice(5)]) this.padEdges[key] = false;
+    }
+    this.padActions = next;
+  }
+
+  snapshot() {
+    this.pollGamepad();
+    return {
+      actions: { ...this.actions, ...this.padActions },
+      pressed: { ...this.pressed },
+      typed: this.typed
+    };
+  }
+
+  endFrame() {
+    this.prev = { ...this.actions };
+    this.pressed = Object.create(null);
+    this.typed = '';
+  }
+
+  dispose() {
+    this.target.removeEventListener?.('keydown', this.handleKeyDown);
+    this.target.removeEventListener?.('keyup', this.handleKeyUp);
+    this.target.removeEventListener?.('blur', this.handleBlur);
+    this.target.removeEventListener?.('gamepadconnected', this.handleGamepadConnected);
+    this.target.removeEventListener?.('gamepaddisconnected', this.handleGamepadDisconnected);
+  }
+}
+
+// ---- src/audio.js ----
+// Tiny Web Audio synth. No audio files and no audio before the first user gesture.
+
+class AudioBus {
+  constructor() {
+    this.ctx = null;
+    this.master = null;
+    this.muted = false;
+    this.noise = null;
+  }
+
+  unlock() {
+    const AudioContextClass = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!this.ctx) {
+      this.ctx = new AudioContextClass();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.16;
+      this.master.connect(this.ctx.destination);
+      this.noise = this.makeNoiseBuffer();
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+  }
+
+  makeNoiseBuffer() {
+    const length = Math.floor(this.ctx.sampleRate * 0.5);
+    const buffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
+    return buffer;
+  }
+
+  setMuted(muted) {
+    this.muted = Boolean(muted);
+    if (this.master) this.master.gain.value = this.muted ? 0 : 0.16;
+  }
+
+  tone(freq, duration, { type = 'square', gain = 0.3, slideTo = null, delay = 0 } = {}) {
+    if (!this.ctx || this.muted) return;
+    const now = this.ctx.currentTime + delay;
+    const osc = this.ctx.createOscillator();
+    const amp = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), now + duration);
+    amp.gain.setValueAtTime(gain, now);
+    amp.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    osc.connect(amp);
+    amp.connect(this.master);
+    osc.start(now);
+    osc.stop(now + duration + 0.02);
+  }
+
+  burst(duration, { gain = 0.35, filterFreq = 900, delay = 0 } = {}) {
+    if (!this.ctx || this.muted || !this.noise) return;
+    const now = this.ctx.currentTime + delay;
+    const source = this.ctx.createBufferSource();
+    const filter = this.ctx.createBiquadFilter();
+    const amp = this.ctx.createGain();
+    source.buffer = this.noise;
+    filter.type = 'lowpass';
+    filter.frequency.value = filterFreq;
+    amp.gain.setValueAtTime(gain, now);
+    amp.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    source.connect(filter);
+    filter.connect(amp);
+    amp.connect(this.master);
+    source.start(now);
+    source.stop(now + duration + 0.02);
+  }
+
+  play(type) {
+    if (!this.ctx || this.muted) return;
+    switch (type) {
+      case 'shot':
+        this.tone(880, 0.055, { slideTo: 320, gain: 0.24 });
+        break;
+      case 'rocket':
+        this.tone(260, 0.20, { type: 'sawtooth', slideTo: 80, gain: 0.30 });
+        this.burst(0.12, { gain: 0.16, filterFreq: 1400 });
+        break;
+      case 'bomb':
+        this.tone(140, 0.22, { type: 'triangle', slideTo: 55, gain: 0.24 });
+        break;
+      case 'explosion':
+        this.burst(0.38, { gain: 0.42, filterFreq: 700 });
+        this.tone(90, 0.30, { type: 'sawtooth', slideTo: 40, gain: 0.20 });
+        break;
+      case 'hit':
+        this.tone(180, 0.32, { type: 'sawtooth', slideTo: 45, gain: 0.36 });
+        this.burst(0.25, { gain: 0.30, filterFreq: 500 });
+        break;
+      case 'landing':
+        this.tone(523, 0.10, { gain: 0.30 });
+        this.tone(784, 0.18, { gain: 0.30, delay: 0.10 });
+        break;
+      case 'gameover':
+        this.tone(392, 0.18, { gain: 0.30 });
+        this.tone(294, 0.18, { gain: 0.30, delay: 0.18 });
+        this.tone(196, 0.35, { gain: 0.30, delay: 0.36 });
+        break;
+      case 'ui':
+        this.tone(660, 0.06, { gain: 0.20 });
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+// ---- src/main.js ----
+// Browser bootstrap: fixed-step loop, input, audio and rendering wiring.
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d', { alpha: false });
+const status = document.getElementById('status');
+const muteButton = document.getElementById('mute-toggle');
+const scanlineButton = document.getElementById('scanline-toggle');
+const resetButton = document.getElementById('reset-scores');
+const testButton = document.getElementById('test-toggle');
+
+let localStore = null;
+try {
+  localStore = globalThis.localStorage ?? null;
+} catch {
+  localStore = null;
+}
+
+const settings = loadSettings(localStore);
+const audio = new AudioBus();
+audio.setMuted(settings.muted);
+
+const game = new Game({
+  seed: (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0,
+  store: localStore,
+  onEvent: (event) => audio.play(event.type)
+});
+game.skillIndex = Math.min(4, Math.max(0, settings.skill - 1));
+
+const input = new Input(window, document);
+input.onFirstGesture = () => audio.unlock();
+
+// Single-file edition: everything is inline, so no offline shell is registered.
+
+canvas.addEventListener('pointerdown', () => {
+  audio.unlock();
+  canvas.focus();
+});
+
+function applySettings() {
+  document.body.classList.toggle('scanlines', settings.scanlines);
+  muteButton.textContent = settings.muted ? 'SOUND OFF' : 'SOUND ON';
+  muteButton.setAttribute('aria-pressed', String(!settings.muted));
+  scanlineButton.textContent = settings.scanlines ? 'CRT ON' : 'CRT OFF';
+  scanlineButton.setAttribute('aria-pressed', String(settings.scanlines));
+  audio.setMuted(settings.muted);
+  saveSettings(settings, localStore);
+}
+
+muteButton.addEventListener('click', () => {
+  settings.muted = !settings.muted;
+  applySettings();
+  audio.unlock();
+  if (!settings.muted) audio.play('ui');
+});
+
+scanlineButton.addEventListener('click', () => {
+  settings.scanlines = !settings.scanlines;
+  applySettings();
+});
+
+testButton.addEventListener('click', () => {
+  // A screen-selectable deterministic flight makes regressions visible without
+  // a debugger; T does the same from the keyboard.
+  game.toggleTestMode();
+  audio.unlock();
+  render(ctx, game);
+});
+
+resetButton.addEventListener('click', () => {
+  if (!window.confirm('Delete all local high scores?')) return;
+  clearScores();
+  game.highScores = [];
+  game.highScore = 0;
+  audio.play('ui');
+});
+
+function resizeCanvas() {
+  const availableWidth = Math.max(240, window.innerWidth - 36);
+  const availableHeight = Math.max(220, window.innerHeight - 210);
+  const scale = Math.max(1, Math.min(6,
+    Math.floor(availableWidth / VIEW_W),
+    Math.floor(availableHeight / VIEW_H)
+  ));
+  canvas.style.width = `${VIEW_W * scale}px`;
+  canvas.style.height = `${VIEW_H * scale}px`;
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+applySettings();
+
+let lastState = '';
+let lastPhase = '';
+function updateStatus() {
+  const stateText = game.state === 'PLAY' ? `PLAY / ${game.phase}` : game.state;
+  const pad = input.gamepadConnected ? ' · GAMEPAD' : '';
+  const test = game.testMode ? ' · TEST' : '';
+  const text = `${stateText} · score ${game.score} · lives ${game.lives} · fuel ${Math.round(game.fuel)}%${pad}${test}`;
+  if (text !== lastState || game.phase !== lastPhase) {
+    status.textContent = text;
+    lastState = text;
+    lastPhase = game.phase;
+  }
+  testButton.textContent = game.testMode ? 'EXIT TEST' : 'TEST FLIGHT';
+  testButton.setAttribute('aria-pressed', String(game.testMode));
+}
+
+let lastTime = 0;
+let accumulator = 0;
+let lastSkillIndex = game.skillIndex;
+
+function frame(now) {
+  if (!lastTime) lastTime = now;
+  let delta = (now - lastTime) / 1000;
+  lastTime = now;
+  if (document.hidden) delta = 0;
+  accumulator += Math.min(delta, 0.1);
+
+  let steps = 0;
+  while (accumulator >= STEP && steps < 5) {
+    input.setTextMode(game.state === 'NAME_ENTRY');
+    input.setGameState(game.state);
+    const snapshot = input.snapshot();
+    if (snapshot.pressed.mute) {
+      settings.muted = !settings.muted;
+      applySettings();
+    }
+    game.update(STEP, snapshot);
+    input.endFrame();
+    accumulator -= STEP;
+    steps += 1;
+  }
+
+  if (game.skillIndex !== lastSkillIndex) {
+    settings.skill = game.skillIndex + 1;
+    saveSettings(settings, localStore);
+    lastSkillIndex = game.skillIndex;
+  }
+
+  render(ctx, game);
+  updateStatus();
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+
+// Debug surface for smoke tests and manual inspection. Not used by gameplay.
+window.__harrier = {
+  game,
+  input,
+  audio,
+  render,
+  snapshot: () => game.debugSnapshot(),
+  toggleTest: () => game.toggleTestMode(),
+  step(seconds, actions = {}) {
+    const ticks = Math.max(1, Math.round(seconds / STEP));
+    for (let i = 0; i < ticks; i += 1) {
+      game.update(STEP, { actions, pressed: {}, typed: '' });
+    }
+    render(ctx, game);
+    return game.debugSnapshot();
+  }
+};
+
+
+</script>
+</body>
+</html>
